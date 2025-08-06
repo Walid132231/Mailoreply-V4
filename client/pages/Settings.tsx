@@ -474,20 +474,66 @@ export default function SettingsNew() {
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
                     <Key className="h-5 w-5" />
-                    <span>Password</span>
+                    <span>Change Password</span>
                   </CardTitle>
                   <CardDescription>
-                    Change your account password
+                    Update your account password
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <Alert className="border-blue-200 bg-blue-50">
-                    <Info className="h-4 w-4 text-blue-600" />
-                    <AlertDescription className="text-blue-800">
-                      Password changes are handled through your email provider's security settings. 
-                      Please use the "Forgot Password" option on the login page to reset your password.
-                    </AlertDescription>
-                  </Alert>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="current-password">Current Password</Label>
+                    <Input
+                      id="current-password"
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      className="mt-2"
+                      placeholder="Enter your current password"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="new-password">New Password</Label>
+                    <Input
+                      id="new-password"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="mt-2"
+                      placeholder="Enter new password (min 6 characters)"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="confirm-password">Confirm New Password</Label>
+                    <Input
+                      id="confirm-password"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="mt-2"
+                      placeholder="Confirm your new password"
+                    />
+                  </div>
+
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h4 className="font-medium text-gray-900 mb-2">Password Requirements</h4>
+                    <ul className="text-sm text-gray-600 space-y-1">
+                      <li>• Minimum 6 characters long</li>
+                      <li>• Use a combination of letters, numbers, and special characters</li>
+                      <li>• Avoid using easily guessable information</li>
+                    </ul>
+                  </div>
+                  
+                  <div className="flex justify-end pt-4">
+                    <Button 
+                      onClick={handlePasswordChange} 
+                      disabled={passwordLoading || !currentPassword || !newPassword || !confirmPassword}
+                    >
+                      {passwordLoading ? 'Changing Password...' : 'Change Password'}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </div>
