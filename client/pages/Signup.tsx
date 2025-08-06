@@ -19,7 +19,7 @@ export default function Signup() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const { signup } = useAuth();
+  const { signup, signupWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
