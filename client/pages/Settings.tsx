@@ -630,6 +630,185 @@ export default function SettingsNew() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Account Tab */}
+          <TabsContent value="account">
+            <div className="space-y-6">
+              
+              {/* Password Change */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Key className="h-5 w-5" />
+                    <span>Change Password</span>
+                  </CardTitle>
+                  <CardDescription>
+                    Update your account password
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="current-password">Current Password</Label>
+                    <Input
+                      id="current-password"
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      className="mt-2"
+                      placeholder="Enter your current password"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="new-password">New Password</Label>
+                    <Input
+                      id="new-password"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="mt-2"
+                      placeholder="Enter new password (min 6 characters)"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="confirm-password">Confirm New Password</Label>
+                    <Input
+                      id="confirm-password"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="mt-2"
+                      placeholder="Confirm your new password"
+                    />
+                  </div>
+
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h4 className="font-medium text-gray-900 mb-2">Password Requirements</h4>
+                    <ul className="text-sm text-gray-600 space-y-1">
+                      <li>• Minimum 6 characters long</li>
+                      <li>• Use a combination of letters, numbers, and special characters</li>
+                      <li>• Avoid using easily guessable information</li>
+                    </ul>
+                  </div>
+                  
+                  <div className="flex justify-end pt-4">
+                    <Button 
+                      onClick={handlePasswordChange} 
+                      disabled={passwordLoading || !currentPassword || !newPassword || !confirmPassword}
+                    >
+                      {passwordLoading ? 'Changing Password...' : 'Change Password'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Account Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <User className="h-5 w-5" />
+                    <span>Account Information</span>
+                  </CardTitle>
+                  <CardDescription>
+                    View your account details and subscription status
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm font-medium text-gray-600">Account Type</Label>
+                      <div className="mt-1">
+                        <Badge variant="outline" className="text-sm">
+                          {user.role.replace('_', ' ').toUpperCase()}
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label className="text-sm font-medium text-gray-600">Member Since</Label>
+                      <div className="mt-1 text-sm">
+                        {new Date(user.created_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label className="text-sm font-medium text-gray-600">Account Status</Label>
+                      <div className="mt-1">
+                        <Badge 
+                          variant="outline" 
+                          className={user.status === 'active' ? 'text-green-600 border-green-300' : 'text-red-600 border-red-300'}
+                        >
+                          {user.status.toUpperCase()}
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    {user.company_name && (
+                      <div>
+                        <Label className="text-sm font-medium text-gray-600">Company</Label>
+                        <div className="mt-1 text-sm">
+                          {user.company_name}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {user.role === 'free' && (
+                    <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-start space-x-3">
+                        <CheckCircle className="h-5 w-5 text-blue-600 mt-0.5" />
+                        <div>
+                          <div className="font-medium text-blue-900">Upgrade Your Account</div>
+                          <div className="text-sm text-blue-700 mt-1">
+                            Get unlimited daily usage, advanced features, and priority support
+                          </div>
+                          <Button size="sm" className="mt-3 bg-blue-600 hover:bg-blue-700">
+                            View Upgrade Options
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Danger Zone */}
+              <Card className="border-red-200">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2 text-red-700">
+                    <AlertCircle className="h-5 w-5" />
+                    <span>Danger Zone</span>
+                  </CardTitle>
+                  <CardDescription>
+                    Irreversible and destructive actions
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="p-4 border border-red-200 rounded-lg">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="font-medium text-red-900">Delete Account</div>
+                          <div className="text-sm text-red-700 mt-1">
+                            Permanently delete your account and all associated data. This action cannot be undone.
+                          </div>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700"
+                          onClick={() => setError('Account deletion is not available yet. Please contact support.')}
+                        >
+                          Delete Account
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
     </DashboardLayout>
