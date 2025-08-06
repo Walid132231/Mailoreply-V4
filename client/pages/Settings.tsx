@@ -22,7 +22,8 @@ import {
   Info,
   Settings as SettingsIcon,
   Globe,
-  Smartphone
+  Smartphone,
+  Crown
 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
