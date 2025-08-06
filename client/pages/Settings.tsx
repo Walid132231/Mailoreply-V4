@@ -142,6 +142,65 @@ export default function SettingsNew() {
     }
   };
 
+  const handlePasswordChange = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setError('Please fill in all password fields');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError('New passwords do not match');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setError('New password must be at least 6 characters long');
+      return;
+    }
+
+    setPasswordLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      // Import supabase from the lib
+      const { supabase } = await import('@/lib/supabase');
+      
+      if (!supabase) {
+        throw new Error('Authentication service not available');
+      }
+
+      // First verify current password by attempting to sign in
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+        email: user!.email,
+        password: currentPassword,
+      });
+
+      if (verifyError) {
+        throw new Error('Current password is incorrect');
+      }
+
+      // Update password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Clear form
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setSuccess('Password changed successfully');
+    } catch (error: any) {
+      setError(error.message || 'Failed to change password');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
   const getDeviceIcon = (deviceName: string) => {
     const name = deviceName.toLowerCase();
     if (name.includes('mobile') || name.includes('phone') || name.includes('android') || name.includes('ios')) {
