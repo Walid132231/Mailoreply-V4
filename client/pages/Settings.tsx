@@ -29,6 +29,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserDevices, removeDevice } from '@/lib/usage-tracking';
 import { LANGUAGES, TONES, Language, Tone, UserDevice } from '@/lib/supabase-types';
+import SubscriptionManager from '@/components/SubscriptionManager';
 
 export default function SettingsNew() {
   const { user, settings, updateUser, updateSettings } = useAuth();
