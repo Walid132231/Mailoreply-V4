@@ -46,6 +46,12 @@ export default function SettingsNew() {
   const [defaultTone, setDefaultTone] = useState<Tone>('Professional');
   const [alwaysEncrypt, setAlwaysEncrypt] = useState(false);
   const [encryptionEnabled, setEncryptionEnabled] = useState(false);
+  
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
