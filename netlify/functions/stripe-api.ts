@@ -423,7 +423,13 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
       })
       .eq('stripe_subscription_id', subscription.id);
 
-    console.log(`Subscription deleted for user ${userId}`);
+    // Revert user role to free when subscription is deleted
+    await supabase
+      .from('users')
+      .update({ role: 'free', updated_at: new Date().toISOString() })
+      .eq('id', userId);
+
+    console.log(`Subscription deleted for user ${userId}, role reverted to free`);
   } catch (error) {
     console.error('Error handling subscription deletion:', error);
   }
