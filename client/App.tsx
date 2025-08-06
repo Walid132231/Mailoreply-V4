@@ -16,6 +16,7 @@ import About from "@/pages/About";
 
 // Import dashboard page
 import Dashboard from "@/pages/Dashboard";
+import EnhancedDashboard from "@/pages/EnhancedDashboard";
 import Settings from "@/pages/Settings";
 
 // Import specialized pages (to be created)
