@@ -374,6 +374,28 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
         onConflict: 'user_id'
       });
 
+    // Update user role based on subscription
+    if (subscription.status === 'active' || subscription.status === 'trialing') {
+      let userRole = 'free'; // default
+      
+      // Map price IDs to user roles
+      const priceToRoleMap = {
+        'price_pro_monthly': 'pro',
+        'price_pro_yearly': 'pro', 
+        'price_pro_plus_monthly': 'pro_plus',
+        'price_pro_plus_yearly': 'pro_plus'
+      };
+      
+      userRole = priceToRoleMap[priceId] || 'free';
+      
+      await supabase
+        .from('users')
+        .update({ role: userRole, updated_at: new Date().toISOString() })
+        .eq('id', userId);
+        
+      console.log(`Updated user ${userId} role to ${userRole} for subscription ${subscription.id}`);
+    }
+
     console.log(`Subscription ${subscription.status} for user ${userId}`);
   } catch (error) {
     console.error('Error handling subscription change:', error);
