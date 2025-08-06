@@ -40,7 +40,6 @@ async def deploy_schema():
             database=DB_NAME,
             # Disable prepared statements for Supabase compatibility
             statement_cache_size=0,
-            prepared_statement_cache_size=0,
             command_timeout=60
         )
         
