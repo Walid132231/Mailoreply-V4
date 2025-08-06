@@ -269,6 +269,10 @@ export default function SettingsNew() {
               <Key className="h-4 w-4" />
               <span>Account</span>
             </TabsTrigger>
+            <TabsTrigger value="billing" className="flex items-center space-x-2">
+              <Crown className="h-4 w-4" />
+              <span>Billing</span>
+            </TabsTrigger>
           </TabsList>
 
           {/* Profile Tab */}
