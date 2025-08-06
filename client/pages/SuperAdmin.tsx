@@ -726,13 +726,31 @@ export default function SuperAdmin() {
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
+                {error && (
+                  <Alert className="border-red-200 bg-red-50">
+                    <AlertCircle className="h-4 w-4 text-red-600" />
+                    <AlertDescription className="text-red-800">
+                      {error}
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
+                {success && (
+                  <Alert className="border-green-200 bg-green-50">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <AlertDescription className="text-green-800">
+                      {success}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="companyName">Company Name</Label>
                     <Input
                       id="companyName"
-                      value={newEnterprise.name}
-                      onChange={(e) => setNewEnterprise(prev => ({ ...prev, name: e.target.value }))}
+                      value={newEnterprise.companyName}
+                      onChange={(e) => setNewEnterprise(prev => ({ ...prev, companyName: e.target.value }))}
                       placeholder="Acme Corporation"
                     />
                   </div>
@@ -748,6 +766,69 @@ export default function SuperAdmin() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="enterprise">Enterprise ($99/month)</SelectItem>
+                        <SelectItem value="enterprise_plus">Enterprise Plus ($199/month)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="adminName">Admin Name</Label>
+                    <Input
+                      id="adminName"
+                      value={newEnterprise.name}
+                      onChange={(e) => setNewEnterprise(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="John Smith"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="adminEmail">Admin Email</Label>
+                    <Input
+                      id="adminEmail"
+                      type="email"
+                      value={newEnterprise.email}
+                      onChange={(e) => setNewEnterprise(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder="admin@company.com"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="userLimit">User Limit</Label>
+                  <Input
+                    id="userLimit"
+                    type="number"
+                    value={newEnterprise.userLimit}
+                    onChange={(e) => setNewEnterprise(prev => ({ ...prev, userLimit: parseInt(e.target.value) || 25 }))}
+                    min="1"
+                    max="1000"
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    Maximum number of users allowed in this enterprise
+                  </p>
+                </div>
+
+                <div className="flex justify-end space-x-2 pt-4">
+                  <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={createEnterpriseWithManager} disabled={createLoading}>
+                    {createLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <Building2 className="mr-2 h-4 w-4" />
+                        Create Enterprise
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
                         <SelectItem value="enterprise">Enterprise ($499/mo)</SelectItem>
                         <SelectItem value="enterprise_plus">Enterprise Plus ($999/mo)</SelectItem>
                       </SelectContent>
