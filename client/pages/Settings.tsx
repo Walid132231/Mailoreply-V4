@@ -264,6 +264,10 @@ export default function SettingsNew() {
               <Monitor className="h-4 w-4" />
               <span>Devices</span>
             </TabsTrigger>
+            <TabsTrigger value="account" className="flex items-center space-x-2">
+              <Key className="h-4 w-4" />
+              <span>Account</span>
+            </TabsTrigger>
           </TabsList>
 
           {/* Profile Tab */}
