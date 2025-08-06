@@ -1130,6 +1130,203 @@ export default function SuperAdmin() {
             </Card>
           </TabsContent>
 
+          {/* Invitations Tab */}
+          <TabsContent value="invitations" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Enterprise Invitations</h2>
+                <p className="text-gray-600 mt-1">
+                  Manage pending invitations and invite new enterprise users.
+                </p>
+              </div>
+              <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Invite User
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Invite Enterprise User</DialogTitle>
+                    <DialogDescription>
+                      Send an invitation to join an existing enterprise.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    {error && (
+                      <Alert className="border-red-200 bg-red-50">
+                        <AlertCircle className="h-4 w-4 text-red-600" />
+                        <AlertDescription className="text-red-800">
+                          {error}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    
+                    {success && (
+                      <Alert className="border-green-200 bg-green-50">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <AlertDescription className="text-green-800">
+                          {success}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="userName">Name</Label>
+                        <Input
+                          id="userName"
+                          value={inviteUser.name}
+                          onChange={(e) => setInviteUser(prev => ({ ...prev, name: e.target.value }))}
+                          placeholder="John Smith"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="userEmail">Email</Label>
+                        <Input
+                          id="userEmail"
+                          type="email"
+                          value={inviteUser.email}
+                          onChange={(e) => setInviteUser(prev => ({ ...prev, email: e.target.value }))}
+                          placeholder="john@company.com"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="company">Company</Label>
+                        <Select value={inviteUser.companyId} onValueChange={(value) => setInviteUser(prev => ({ ...prev, companyId: value }))}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select company" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {enterprises.map(enterprise => (
+                              <SelectItem key={enterprise.id} value={enterprise.id}>
+                                {enterprise.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="userRole">Role</Label>
+                        <Select 
+                          value={inviteUser.role} 
+                          onValueChange={(value: 'enterprise_manager' | 'enterprise_user') => 
+                            setInviteUser(prev => ({ ...prev, role: value }))
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="enterprise_user">Enterprise User</SelectItem>
+                            <SelectItem value="enterprise_manager">Enterprise Manager</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end space-x-2 pt-4">
+                      <Button variant="outline" onClick={() => setIsInviteDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={inviteEnterpriseUser} disabled={inviteLoading}>
+                        {inviteLoading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Sending...
+                          </>
+                        ) : (
+                          <>
+                            <Send className="mr-2 h-4 w-4" />
+                            Send Invitation
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {/* Pending Invitations */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Mail className="mr-2 h-5 w-5" />
+                  Pending Invitations ({pendingInvitations.length})
+                </CardTitle>
+                <CardDescription>
+                  Manage pending enterprise user invitations
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {pendingInvitations.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Mail className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No Pending Invitations</h3>
+                    <p className="text-gray-600 mb-4">
+                      All invitations have been accepted or there are no pending invites.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {pendingInvitations.map((invitation) => (
+                      <div key={invitation.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-4">
+                            <div>
+                              <div className="font-semibold text-gray-900">{invitation.name}</div>
+                              <div className="text-sm text-gray-600">{invitation.email}</div>
+                            </div>
+                            <div>
+                              <Badge variant="outline" className="text-xs">
+                                {invitation.role.replace('_', ' ')}
+                              </Badge>
+                            </div>
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">{invitation.company_name}</div>
+                              <div className="text-xs text-gray-500">
+                                Invited by {invitation.invited_by_name}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-xs text-gray-500 mt-2">
+                            Sent: {new Date(invitation.created_at).toLocaleDateString()} • 
+                            Expires: {new Date(invitation.expires_at).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Badge className={getStatusColor(invitation.status)}>
+                            {invitation.status}
+                          </Badge>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => resendInvitation(invitation.id)}
+                          >
+                            <Send className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => cancelInvitation(invitation.id)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-6">
             <div className="text-center py-12">
