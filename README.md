@@ -79,9 +79,9 @@ Navigate to `http://localhost:8080/setup` to create your administrator account.
 
 ## 📖 Documentation
 
-- **[Deployment Guide](DEPLOYMENT_GUIDE_v2.md)**: Complete production deployment
-- **[Database Schema](supabase_schema_clean.sql)**: PostgreSQL schema and functions
-- **[Environment Config](.env.example)**: All configuration options
+- **[DATABASE_DEPLOYMENT_FINAL.md](DATABASE_DEPLOYMENT_FINAL.md)**: Database setup with 5 SQL files
+- **[DEPLOYMENT_READY.md](DEPLOYMENT_READY.md)**: Complete production deployment guide  
+- **[N8N_ENCRYPTION_SETUP.md](N8N_ENCRYPTION_SETUP.md)**: N8N workflow setup for AI generation
 
 ## 🔐 Security Features
 
