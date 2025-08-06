@@ -25,11 +25,11 @@ export default function Login() {
     setError("");
 
     try {
-      const success = await login(email, password);
-      if (success) {
+      const result = await login(email, password);
+      if (result.success) {
         navigate(from, { replace: true });
       } else {
-        setError("Invalid email or password");
+        setError(result.error || "Login failed");
       }
     } catch (err) {
       setError("Login failed. Please try again.");
