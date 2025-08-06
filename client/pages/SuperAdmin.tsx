@@ -348,23 +348,6 @@ const getPendingInvitations = async (): Promise<PendingInvitation[]> => {
       }
     }
   ];
-  
-  localStorage.setItem('super_admin_enterprises', JSON.stringify(defaultEnterprises));
-  return defaultEnterprises;
-};
-
-const getSystemMetrics = (): SystemMetrics => {
-  return {
-    totalEnterprises: 3,
-    totalEnterpriseUsers: 35,
-    monthlyRevenue: 1498,
-    averageUsagePerEnterprise: 593,
-    topEnterprises: [
-      { id: '3', name: 'Global Marketing Agency', metric: 'AI Generations', value: 1234 },
-      { id: '1', name: 'Demo Corporation', metric: 'Monthly Revenue', value: 499 },
-      { id: '3', name: 'Global Marketing Agency', metric: 'Team Size', value: 23 }
-    ]
-  };
 };
 
 export default function SuperAdmin() {
