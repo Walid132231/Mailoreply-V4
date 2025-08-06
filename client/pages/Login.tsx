@@ -38,6 +38,24 @@ export default function Login() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    setError("");
+    
+    try {
+      const result = await loginWithGoogle();
+      if (!result.success && result.error) {
+        setError(result.error);
+      }
+      // If successful, OAuth redirect will happen automatically
+    } catch (error: any) {
+      console.error("Google login error:", error);
+      setError(error.message || "Google login failed");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-brand-50 via-white to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md mx-auto">
