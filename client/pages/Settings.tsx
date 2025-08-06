@@ -332,57 +332,122 @@ export default function SettingsNew() {
 
           {/* Preferences Tab */}
           <TabsContent value="preferences">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <SettingsIcon className="h-5 w-5" />
-                  <span>AI Generation Preferences</span>
-                </CardTitle>
-                <CardDescription>
-                  Set your default preferences for AI email generation
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="default-language" className="flex items-center space-x-2">
-                      <Globe className="h-4 w-4" />
-                      <span>Default Language</span>
-                    </Label>
-                    <Select value={defaultLanguage} onValueChange={(value) => setDefaultLanguage(value as Language)}>
-                      <SelectTrigger className="mt-2">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {LANGUAGES.map((lang) => (
-                          <SelectItem key={lang} value={lang}>{lang}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <SettingsIcon className="h-5 w-5" />
+                    <span>AI Generation Preferences</span>
+                  </CardTitle>
+                  <CardDescription>
+                    Set your default preferences for AI email generation
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="default-language" className="flex items-center space-x-2">
+                        <Globe className="h-4 w-4" />
+                        <span>Default Language</span>
+                      </Label>
+                      <Select value={defaultLanguage} onValueChange={(value) => setDefaultLanguage(value as Language)}>
+                        <SelectTrigger className="mt-2">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {LANGUAGES.map((lang) => (
+                            <SelectItem key={lang} value={lang}>{lang}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="default-tone">Default Tone</Label>
+                      <Select value={defaultTone} onValueChange={(value) => setDefaultTone(value as Tone)}>
+                        <SelectTrigger className="mt-2">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {TONES.map((tone) => (
+                            <SelectItem key={tone} value={tone}>{tone}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
-                  <div>
-                    <Label htmlFor="default-tone">Default Tone</Label>
-                    <Select value={defaultTone} onValueChange={(value) => setDefaultTone(value as Tone)}>
-                      <SelectTrigger className="mt-2">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {TONES.map((tone) => (
-                          <SelectItem key={tone} value={tone}>{tone}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="flex justify-end pt-4">
+                    <Button onClick={handleSavePreferences} disabled={loading}>
+                      {loading ? 'Saving...' : 'Save Preferences'}
+                    </Button>
                   </div>
-                </div>
+                </CardContent>
+              </Card>
 
-                <div className="flex justify-end pt-4">
-                  <Button onClick={handleSavePreferences} disabled={loading}>
-                    {loading ? 'Saving...' : 'Save Preferences'}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+              {/* Notification Preferences */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Bell className="h-5 w-5" />
+                    <span>Notification Preferences</span>
+                  </CardTitle>
+                  <CardDescription>
+                    Control how you receive notifications and updates
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div>
+                        <div className="font-medium">Usage Limit Warnings</div>
+                        <div className="text-sm text-gray-600">
+                          Get notified when approaching your daily/monthly limits
+                        </div>
+                      </div>
+                      <Switch
+                        checked={true}
+                        disabled
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div>
+                        <div className="font-medium">Security Alerts</div>
+                        <div className="text-sm text-gray-600">
+                          Receive notifications about login attempts and security events
+                        </div>
+                      </div>
+                      <Switch
+                        checked={true}
+                        disabled
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div>
+                        <div className="font-medium">Feature Updates</div>
+                        <div className="text-sm text-gray-600">
+                          Get updates about new features and improvements
+                        </div>
+                      </div>
+                      <Switch
+                        checked={true}
+                        disabled
+                      />
+                    </div>
+                  </div>
+
+                  <Alert className="border-blue-200 bg-blue-50">
+                    <Info className="h-4 w-4 text-blue-600" />
+                    <AlertDescription className="text-blue-800">
+                      Notification preferences will be fully configurable in a future update. 
+                      Currently, essential security and limit notifications are always enabled.
+                    </AlertDescription>
+                  </Alert>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Security Tab */}
