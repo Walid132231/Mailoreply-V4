@@ -369,20 +369,277 @@ const getSystemMetrics = (): SystemMetrics => {
 
 export default function SuperAdmin() {
   const { user } = useAuth();
-  const [enterprises, setEnterprises] = useState<Enterprise[]>(getEnterprises());
-  const [systemMetrics, setSystemMetrics] = useState<SystemMetrics>(getSystemMetrics());
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [selectedEnterprise, setSelectedEnterprise] = useState<Enterprise | null>(null);
-  const [newEnterprise, setNewEnterprise] = useState({
-    name: '',
-    adminEmail: '',
-    adminName: '',
-    userLimit: 25,
-    plan: 'enterprise' as const,
-    aiGenerations: 1000,
-    templatesLimit: 200,
-    storageGB: 5
+  const [enterprises, setEnterprises] = useState<Enterprise[]>([]);
+  const [pendingInvitations, setPendingInvitations] = useState<PendingInvitation[]>([]);
+  const [systemMetrics, setSystemMetrics] = useState<SystemMetrics>({
+    totalEnterprises: 0,
+    totalEnterpriseUsers: 0,
+    monthlyRevenue: 0,
+    averageUsagePerEnterprise: 0,
+    topEnterprises: []
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  
+  // Create enterprise dialog state
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [newEnterprise, setNewEnterprise] = useState<InviteEnterpriseUser>({
+    name: '',
+    email: '',
+    companyName: '',
+    plan: 'enterprise',
+    userLimit: 25,
+    role: 'enterprise_manager'
+  });
+
+  // Invite user dialog state
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteUser, setInviteUser] = useState({
+    name: '',
+    email: '',
+    companyId: '',
+    role: 'enterprise_user' as 'enterprise_manager' | 'enterprise_user'
+  });
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [enterprisesData, invitationsData] = await Promise.all([
+        getEnterprises(),
+        getPendingInvitations()
+      ]);
+      
+      setEnterprises(enterprisesData);
+      setPendingInvitations(invitationsData);
+      
+      // Calculate system metrics
+      const totalEnterprises = enterprisesData.length;
+      const totalUsers = enterprisesData.reduce((sum, e) => sum + e.currentUsers, 0);
+      const totalRevenue = enterprisesData.reduce((sum, e) => sum + e.billing.monthlyRevenue, 0);
+      const avgUsage = totalEnterprises > 0 ? totalUsers / totalEnterprises : 0;
+
+      setSystemMetrics({
+        totalEnterprises,
+        totalEnterpriseUsers: totalUsers,
+        monthlyRevenue: totalRevenue,
+        averageUsagePerEnterprise: avgUsage,
+        topEnterprises: enterprisesData
+          .sort((a, b) => b.currentUsers - a.currentUsers)
+          .slice(0, 5)
+          .map(e => ({
+            id: e.id,
+            name: e.name,
+            metric: 'users',
+            value: e.currentUsers
+          }))
+      });
+    } catch (error) {
+      console.error('Error loading data:', error);
+      setError('Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createEnterpriseWithManager = async () => {
+    if (!newEnterprise.name || !newEnterprise.email || !newEnterprise.companyName) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    setCreateLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      if (!isSupabaseConfigured) {
+        throw new Error('Supabase not configured');
+      }
+
+      // Create company first
+      const { data: company, error: companyError } = await supabase
+        .from('companies')
+        .insert({
+          name: newEnterprise.companyName,
+          plan_type: newEnterprise.plan,
+          max_users: newEnterprise.userLimit,
+          current_users: 0,
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (companyError) throw companyError;
+
+      // Create manager user
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .insert({
+          name: newEnterprise.name,
+          email: newEnterprise.email,
+          role: 'enterprise_manager',
+          company_id: company.id,
+          daily_limit: -1,
+          monthly_limit: -1,
+          device_limit: -1,
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (userError) throw userError;
+
+      // Send invitation to the manager
+      const { data: inviteResult, error: inviteError } = await supabase
+        .rpc('invite_enterprise_user', {
+          user_email: newEnterprise.email,
+          user_name: newEnterprise.name,
+          user_role: 'enterprise_manager',
+          manager_user_id: user?.id
+        });
+
+      if (inviteError) throw inviteError;
+
+      if (!inviteResult.success) {
+        throw new Error(inviteResult.error || 'Failed to send invitation');
+      }
+
+      setSuccess(`Enterprise "${newEnterprise.companyName}" created and invitation sent to ${newEnterprise.email}`);
+      setIsCreateDialogOpen(false);
+      setNewEnterprise({
+        name: '',
+        email: '',
+        companyName: '',
+        plan: 'enterprise',
+        userLimit: 25,
+        role: 'enterprise_manager'
+      });
+      
+      // Reload data
+      loadData();
+    } catch (error: any) {
+      console.error('Error creating enterprise:', error);
+      setError(error.message || 'Failed to create enterprise');
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+
+  const inviteEnterpriseUser = async () => {
+    if (!inviteUser.name || !inviteUser.email || !inviteUser.companyId) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    setInviteLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      if (!isSupabaseConfigured) {
+        throw new Error('Supabase not configured');
+      }
+
+      // Send invitation
+      const { data: result, error } = await supabase
+        .rpc('invite_enterprise_user', {
+          user_email: inviteUser.email,
+          user_name: inviteUser.name,
+          user_role: inviteUser.role,
+          manager_user_id: user?.id
+        });
+
+      if (error) throw error;
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to send invitation');
+      }
+
+      setSuccess(`Invitation sent to ${inviteUser.email}`);
+      setIsInviteDialogOpen(false);
+      setInviteUser({
+        name: '',
+        email: '',
+        companyId: '',
+        role: 'enterprise_user'
+      });
+      
+      // Reload pending invitations
+      const invitations = await getPendingInvitations();
+      setPendingInvitations(invitations);
+    } catch (error: any) {
+      console.error('Error inviting user:', error);
+      setError(error.message || 'Failed to send invitation');
+    } finally {
+      setInviteLoading(false);
+    }
+  };
+
+  const resendInvitation = async (invitationId: string) => {
+    try {
+      if (!isSupabaseConfigured) {
+        throw new Error('Supabase not configured');
+      }
+
+      // Get invitation details
+      const { data: invitation, error: fetchError } = await supabase
+        .from('user_invitations')
+        .select('email, name, role')
+        .eq('id', invitationId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Send new invitation
+      const { data: result, error: inviteError } = await supabase
+        .rpc('invite_enterprise_user', {
+          user_email: invitation.email,
+          user_name: invitation.name,
+          user_role: invitation.role,
+          manager_user_id: user?.id
+        });
+
+      if (inviteError) throw inviteError;
+
+      if (result.success) {
+        setSuccess('Invitation resent successfully');
+        loadData(); // Reload to update invitation data
+      } else {
+        setError(result.error || 'Failed to resend invitation');
+      }
+    } catch (error: any) {
+      console.error('Error resending invitation:', error);
+      setError(error.message || 'Failed to resend invitation');
+    }
+  };
+
+  const cancelInvitation = async (invitationId: string) => {
+    try {
+      if (!isSupabaseConfigured) {
+        throw new Error('Supabase not configured');
+      }
+
+      const { error } = await supabase
+        .from('user_invitations')
+        .update({ status: 'cancelled' })
+        .eq('id', invitationId);
+
+      if (error) throw error;
+
+      setSuccess('Invitation cancelled');
+      loadData(); // Reload data
+    } catch (error: any) {
+      console.error('Error cancelling invitation:', error);
+      setError(error.message || 'Failed to cancel invitation');
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -390,6 +647,7 @@ export default function SuperAdmin() {
       case 'trial': return 'bg-blue-100 text-blue-800';
       case 'inactive': return 'bg-gray-100 text-gray-800';
       case 'suspended': return 'bg-red-100 text-red-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -402,52 +660,15 @@ export default function SuperAdmin() {
     }
   };
 
-  const createEnterprise = () => {
-    const enterprise: Enterprise = {
-      id: Date.now().toString(),
-      name: newEnterprise.name,
-      adminEmail: newEnterprise.adminEmail,
-      adminName: newEnterprise.adminName,
-      status: 'trial',
-      plan: newEnterprise.plan,
-      createdAt: new Date().toISOString(),
-      userLimit: newEnterprise.userLimit,
-      currentUsers: 0,
-      usageLimits: {
-        aiGenerations: newEnterprise.aiGenerations,
-        templatesLimit: newEnterprise.templatesLimit,
-        storageGB: newEnterprise.storageGB
-      },
-      billing: {
-        monthlyRevenue: 0,
-        lastPayment: '',
-        nextBilling: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-      },
-      usage: {
-        totalAIGenerations: 0,
-        totalTemplates: 0,
-        totalUsers: 0,
-        storageUsed: 0
-      },
-      features: {
-        customBranding: newEnterprise.plan === 'enterprise_plus',
-        apiAccess: newEnterprise.plan === 'enterprise_plus',
-        prioritySupport: true,
-        advancedAnalytics: newEnterprise.plan === 'enterprise_plus',
-        customIntegrations: newEnterprise.plan === 'enterprise_plus'
-      }
-    };
-
-    setEnterprises(prev => [...prev, enterprise]);
-    setNewEnterprise({
-      name: '',
-      adminEmail: '',
-      adminName: '',
-      userLimit: 25,
-      plan: 'enterprise',
-      aiGenerations: 1000,
-      templatesLimit: 200,
-      storageGB: 5
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </DashboardLayout>
+    );
+  }
     });
     setIsCreateDialogOpen(false);
   };
