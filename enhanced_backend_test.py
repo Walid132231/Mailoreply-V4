@@ -13,8 +13,8 @@ from typing import Dict, Any, Optional
 class EnhancedFeaturesBackendTester:
     def __init__(self):
         # Base URLs
-        self.frontend_url = "http://localhost:5173"
-        self.backend_url = "http://localhost:5173/api"
+        self.frontend_url = "http://localhost:3000"
+        self.backend_url = "http://localhost:3000/api"
         self.netlify_functions_url = "/.netlify/functions"
         
         # Supabase configuration
