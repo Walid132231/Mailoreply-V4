@@ -273,6 +273,39 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  const loginWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
+    if (!isSupabaseConfigured || !supabase) {
+      return {
+        success: false,
+        error: 'Authentication service not configured. Please contact administrator.'
+      };
+    }
+
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`
+        }
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      // OAuth redirect happens automatically, no need to return success immediately
+      return { success: true };
+    } catch (error) {
+      console.error('Google login error:', error);
+      return { success: false, error: 'An unexpected error occurred' };
+    }
+  };
+
+  const signupWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
+    // Same as loginWithGoogle since OAuth handles both cases
+    return loginWithGoogle();
+  };
+
   const signup = async (
     email: string,
     password: string,
