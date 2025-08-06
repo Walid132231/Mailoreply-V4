@@ -81,8 +81,8 @@ Navigate to `http://localhost:8080/setup` to create your administrator account.
 
 ## 📖 Documentation
 
+- **[EMERGENT_DEPLOYMENT_GUIDE.md](EMERGENT_DEPLOYMENT_GUIDE.md)**: Ready for Emergent platform deployment  
 - **[DATABASE_DEPLOYMENT_FINAL.md](DATABASE_DEPLOYMENT_FINAL.md)**: Database setup with 5 SQL files
-- **[DEPLOYMENT_READY.md](DEPLOYMENT_READY.md)**: Complete production deployment guide  
 - **[N8N_ENCRYPTION_SETUP.md](N8N_ENCRYPTION_SETUP.md)**: N8N workflow setup for AI generation
 
 ## 🔐 Security Features
