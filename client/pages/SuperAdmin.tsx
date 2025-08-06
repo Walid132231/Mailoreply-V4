@@ -86,6 +86,27 @@ interface SystemMetrics {
   }>;
 }
 
+interface PendingInvitation {
+  id: string;
+  email: string;
+  name: string;
+  company_name: string;
+  role: string;
+  status: string;
+  expires_at: string;
+  invited_by_name: string;
+  created_at: string;
+}
+
+interface InviteEnterpriseUser {
+  name: string;
+  email: string;
+  companyName: string;
+  plan: 'enterprise' | 'enterprise_plus';
+  userLimit: number;
+  role: 'enterprise_manager' | 'enterprise_user';
+}
+
 const getEnterprises = (): Enterprise[] => {
   const saved = localStorage.getItem('super_admin_enterprises');
   if (saved) return JSON.parse(saved);
