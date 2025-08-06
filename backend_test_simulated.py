@@ -270,7 +270,7 @@ class EnterpriseInvitationSimulatedTester:
             supabase_calls = [
                 '.from(\'companies\')',
                 '.from(\'user_invitations\')',
-                '.rpc(\'invite_enterprise_user\')',
+                '.rpc(\'invite_enterprise_user\',',
                 'isSupabaseConfigured'
             ]
             
