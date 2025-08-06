@@ -45,11 +45,17 @@ npm install
 ```
 
 ### 2. Environment Setup
-Copy `.env.example` to `.env` and configure:
+Configure your `.env` file with:
 ```bash
 # Required: Supabase Configuration
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# Required: Stripe Integration
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
 
 # Required: N8N Webhooks
 VITE_N8N_REPLY_WEBHOOK_URL=https://n8n.domain.com/webhook/ai-reply
@@ -58,9 +64,10 @@ VITE_N8N_WEBHOOK_TOKEN=your-webhook-token
 ```
 
 ### 3. Database Setup
+Follow the complete database deployment sequence:
 1. Create Supabase project
-2. Run `supabase_schema_clean.sql` in SQL Editor
-3. Verify tables and functions are created
+2. Follow **[DATABASE_DEPLOYMENT_FINAL.md](DATABASE_DEPLOYMENT_FINAL.md)**
+3. Deploy all 5 SQL files in the correct order
 
 ### 4. Development
 ```bash
