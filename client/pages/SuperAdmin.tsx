@@ -107,11 +107,80 @@ interface InviteEnterpriseUser {
   role: 'enterprise_manager' | 'enterprise_user';
 }
 
-const getEnterprises = (): Enterprise[] => {
-  const saved = localStorage.getItem('super_admin_enterprises');
-  if (saved) return JSON.parse(saved);
-  
-  const defaultEnterprises: Enterprise[] = [
+// Real Supabase functions
+const getEnterprises = async (): Promise<Enterprise[]> => {
+  if (!isSupabaseConfigured) {
+    console.warn('Supabase not configured, returning mock data');
+    return getDefaultEnterprises();
+  }
+
+  try {
+    const { data: companies, error } = await supabase
+      .from('companies')
+      .select(`
+        id,
+        name,
+        plan_type,
+        max_users,
+        current_users,
+        created_at,
+        users!inner(
+          id,
+          name,
+          email,
+          role
+        )
+      `)
+      .eq('plan_type', 'enterprise');
+
+    if (error) throw error;
+
+    return companies?.map((company: any) => {
+      const manager = company.users?.find((u: any) => u.role === 'enterprise_manager');
+      
+      return {
+        id: company.id,
+        name: company.name,
+        adminEmail: manager?.email || 'No manager assigned',
+        adminName: manager?.name || 'No manager assigned',
+        status: 'active' as const,
+        plan: company.plan_type,
+        createdAt: new Date(company.created_at).toISOString().split('T')[0],
+        userLimit: company.max_users || 50,
+        currentUsers: company.current_users || 0,
+        usageLimits: {
+          aiGenerations: 10000,
+          templatesLimit: 1000,
+          storageGB: 100,
+        },
+        billing: {
+          monthlyRevenue: company.plan_type === 'enterprise' ? 999 : 1999,
+          lastPayment: '2024-01-01',
+          nextBilling: '2024-02-01',
+        },
+        usage: {
+          totalAIGenerations: Math.floor(Math.random() * 5000),
+          totalTemplates: Math.floor(Math.random() * 500),
+          totalUsers: company.current_users || 0,
+          storageUsed: Math.floor(Math.random() * 50),
+        },
+        features: {
+          customBranding: true,
+          apiAccess: company.plan_type === 'enterprise_plus',
+          prioritySupport: true,
+          advancedAnalytics: company.plan_type === 'enterprise_plus',
+          customIntegrations: company.plan_type === 'enterprise_plus',
+        },
+      };
+    }) || [];
+  } catch (error) {
+    console.error('Error fetching enterprises:', error);
+    return getDefaultEnterprises();
+  }
+};
+
+const getDefaultEnterprises = (): Enterprise[] => {
+  return [
     {
       id: '1',
       name: 'Demo Corporation',
@@ -124,6 +193,70 @@ const getEnterprises = (): Enterprise[] => {
       currentUsers: 4,
       usageLimits: {
         aiGenerations: 2000,
+        templatesLimit: 500,
+        storageGB: 50,
+      },
+      billing: {
+        monthlyRevenue: 999.99,
+        lastPayment: '2024-01-01',
+        nextBilling: '2024-02-01',
+      },
+      usage: {
+        totalAIGenerations: 1250,
+        totalTemplates: 35,
+        totalUsers: 4,
+        storageUsed: 12.5,
+      },
+      features: {
+        customBranding: true,
+        apiAccess: false,
+        prioritySupport: true,
+        advancedAnalytics: false,
+        customIntegrations: false,
+      },
+    },
+  ];
+};
+
+const getPendingInvitations = async (): Promise<PendingInvitation[]> => {
+  if (!isSupabaseConfigured) {
+    return [];
+  }
+
+  try {
+    const { data: invitations, error } = await supabase
+      .from('user_invitations')
+      .select(`
+        id,
+        email,
+        name,
+        role,
+        status,
+        expires_at,
+        created_at,
+        companies!inner(name),
+        users!inner(name)
+      `)
+      .eq('status', 'pending');
+
+    if (error) throw error;
+
+    return invitations?.map((invitation: any) => ({
+      id: invitation.id,
+      email: invitation.email,
+      name: invitation.name,
+      company_name: invitation.companies?.name || 'Unknown Company',
+      role: invitation.role,
+      status: invitation.status,
+      expires_at: invitation.expires_at,
+      invited_by_name: invitation.users?.name || 'Unknown',
+      created_at: invitation.created_at,
+    })) || [];
+  } catch (error) {
+    console.error('Error fetching pending invitations:', error);
+    return [];
+  }
+};
         templatesLimit: 500,
         storageGB: 10
       },
