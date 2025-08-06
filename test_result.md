@@ -200,13 +200,15 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Password Change Functionality"
-    - "Settings Data Persistence - User Profile Updates"
-    - "Settings Data Persistence - AI Preferences"
-    - "Settings Data Persistence - Encryption Settings"
+    - "Enhanced Settings Billing Section"
+    - "Google OAuth Integration"
+    - "Stripe Integration Implementation"
+    - "N8N Integration for AI Generation"
+    - "Role Upgrade Webhook Logic"
+    - "Button Connectivity Implementation"
   stuck_tasks: []
-  test_all: false
-  test_priority: "high_first"
+  test_all: true
+  test_priority: "comprehensive_enhanced_features"
 
 agent_communication:
   - agent: "testing"
