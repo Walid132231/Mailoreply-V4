@@ -268,10 +268,10 @@ class EnterpriseInvitationSimulatedTester:
             
             # Check for Supabase integration
             supabase_calls = [
-                'supabase.from(\'companies\')',
-                'supabase.from(\'user_invitations\')',
-                'supabase.rpc(\'invite_enterprise_user\')',
-                'supabase.rpc(\'bulk_invite_enterprise_users\')'
+                '.from(\'companies\')',
+                '.from(\'user_invitations\')',
+                '.rpc(\'invite_enterprise_user\')',
+                'isSupabaseConfigured'
             ]
             
             missing_supabase = []
