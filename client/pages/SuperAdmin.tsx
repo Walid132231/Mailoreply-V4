@@ -914,9 +914,17 @@ export default function SuperAdmin() {
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="enterprises">Enterprises</TabsTrigger>
+            <TabsTrigger value="invitations">
+              Invitations
+              {pendingInvitations.length > 0 && (
+                <Badge className="ml-2 h-5 w-5 p-0 text-xs">
+                  {pendingInvitations.length}
+                </Badge>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="system">System</TabsTrigger>
           </TabsList>
