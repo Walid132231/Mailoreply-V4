@@ -405,9 +405,8 @@ class EnterpriseInvitationSimulatedTester:
                 return False
             
             # Check for email provider integrations
-            providers = ['sendgrid', 'aws-ses', 'resend', 'custom']
-            provider_methods = [f'sendVia{provider.replace("-", "").replace("_", "").title()}' for provider in providers if provider != 'custom']
-            provider_methods.append('sendViaCustomProvider')
+            providers = ['SendGrid', 'AWSSES', 'Resend', 'CustomProvider']
+            provider_methods = [f'sendVia{provider}' for provider in providers]
             
             missing_providers = []
             for method in provider_methods:
