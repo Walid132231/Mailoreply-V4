@@ -125,9 +125,9 @@ function AppContent() {
   );
 }
 
-// Dashboard Router Component - single dashboard for all users
+// Enhanced Dashboard Router Component with role-specific features
 function DashboardRouter() {
-  return <Dashboard />;
+  return <EnhancedDashboard />;
 }
 
 export default function App() {
