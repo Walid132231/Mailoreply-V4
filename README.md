@@ -26,8 +26,8 @@ AI-powered email generation platform with enterprise-grade security, smart devic
 | Role | Daily Limit | Monthly Limit | Devices | Price |
 |------|-------------|---------------|---------|-------|
 | **Free** | 3 emails | 30 emails | 1 device | $0 |
-| **Pro** | Unlimited | 100 emails | 1 device | $19/mo |
-| **Pro Plus** | Unlimited | Unlimited | 2 devices | $39/mo |
+| **Pro** | Unlimited | Unlimited | 1 device | $5.99/mo |
+| **Pro Plus** | Unlimited | Unlimited | 2 devices | $20/mo |
 | **Enterprise** | Unlimited | Unlimited | Unlimited | Custom |
 
 ## 🚀 Quick Start
