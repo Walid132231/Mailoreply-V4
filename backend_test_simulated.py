@@ -162,7 +162,7 @@ class EnterpriseInvitationSimulatedTester:
             # Check for essential logic components
             logic_checks = [
                 ('manager verification', 'role = \'enterprise_manager\''),
-                ('user limit check', 'current_users >= max_users'),
+                ('user limit check', 'current_user_count >= max_users'),
                 ('duplicate invitation check', 'pending invitation'),
                 ('invitation creation', 'INSERT INTO public.user_invitations'),
                 ('JSON response', 'json_build_object'),
