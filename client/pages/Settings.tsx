@@ -812,6 +812,13 @@ export default function SettingsNew() {
               </Card>
             </div>
           </TabsContent>
+
+          {/* Billing Tab */}
+          <TabsContent value="billing">
+            <div className="space-y-6">
+              <SubscriptionManager />
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
     </DashboardLayout>
