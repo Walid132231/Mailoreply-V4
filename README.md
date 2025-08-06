@@ -32,42 +32,44 @@ AI-powered email generation platform with enterprise-grade security, smart devic
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Node.js 18+
-- Supabase account
-- N8N instance (for AI generation)
-
-### 1. Clone & Install
+### 1. Clone & Setup
 ```bash
-git clone <repository-url>
+git clone <your-repository>
 cd mailoreply-ai
-npm install
+yarn install
 ```
 
 ### 2. Environment Setup
-Configure your `.env` file with:
+Configure your `.env` file:
 ```bash
-# Required: Supabase Configuration
+# Supabase (Required)
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
-# Required: Stripe Integration
+# Optional: Stripe, N8N, Google OAuth
 VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-
-# Required: N8N Webhooks
 VITE_N8N_REPLY_WEBHOOK_URL=https://n8n.domain.com/webhook/ai-reply
-VITE_N8N_EMAIL_WEBHOOK_URL=https://n8n.domain.com/webhook/ai-email
-VITE_N8N_WEBHOOK_TOKEN=your-webhook-token
 ```
 
 ### 3. Database Setup
-Follow the complete database deployment sequence:
-1. Create Supabase project
-2. Follow **[DATABASE_DEPLOYMENT_FINAL.md](DATABASE_DEPLOYMENT_FINAL.md)**
-3. Deploy all 5 SQL files in the correct order
+Deploy 5 SQL files to Supabase in order:
+1. **supabase_schema_clean.sql** - Core schema
+2. **complete_user_limits_update.sql** - User limits  
+3. **enhanced_template_management.sql** - Templates
+4. **supabase_stripe_schema_compatible.sql** - Billing
+5. **enterprise_invitation_system.sql** - Enterprise
+
+### 4. Development
+```bash
+# Build server
+yarn build:server
+
+# Start development
+yarn dev
+
+# Open: http://localhost:3000
+```
 
 ### 4. Development
 ```bash
