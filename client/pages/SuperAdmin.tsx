@@ -9,7 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import DashboardLayout from "@/components/DashboardLayout";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
 import { 
   Crown,
   Building2,
@@ -28,9 +31,12 @@ import {
   CheckCircle,
   TrendingUp,
   DollarSign,
-  Zap
+  Zap,
+  Mail,
+  Send,
+  UserPlus,
+  Loader2
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface Enterprise {
   id: string;
