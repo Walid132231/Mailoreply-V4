@@ -14,31 +14,54 @@ export default function Signup() {
     email: "",
     password: "",
     confirmPassword: "",
+    name: "",
     acceptTerms: false,
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const { signup } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
     
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match!");
+      setError("Passwords don't match!");
       setIsLoading(false);
       return;
     }
     
     if (!formData.acceptTerms) {
-      alert("Please accept the terms and conditions");
+      setError("Please accept the terms and conditions");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!formData.name.trim()) {
+      setError("Please enter your name");
       setIsLoading(false);
       return;
     }
     
-    // TODO: Integrate with Supabase auth
-    setTimeout(() => {
+    try {
+      const result = await signup(formData.email, formData.password, formData.name);
+      if (result.success) {
+        if (result.error) {
+          // This indicates email confirmation required
+          setError(result.error);
+        } else {
+          navigate("/dashboard", { replace: true });
+        }
+      } else {
+        setError(result.error || "Signup failed");
+      }
+    } catch (err) {
+      setError("Signup failed. Please try again.");
+    } finally {
       setIsLoading(false);
-      alert("Supabase integration coming soon! This will create account and redirect to dashboard.");
-    }, 1000);
+    }
   };
 
   const handleInputChange = (field: string, value: string | boolean) => {
