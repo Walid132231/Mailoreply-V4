@@ -1,0 +1,46 @@
+{
+  "name": "mailoreply-ai",
+  "version": "1.0.0",
+  "description": "AI-powered email generation and management platform",
+  "runtime": {
+    "node": "18.0.0"
+  },
+  "services": {
+    "frontend": {
+      "command": "yarn dev",
+      "port": 3000,
+      "health_check": "/",
+      "public": true
+    },
+    "backend": {
+      "command": "yarn start",
+      "port": 8001,
+      "health_check": "/api/ping",
+      "build": "yarn build:server"
+    }
+  },
+  "environment": {
+    "NODE_ENV": "production",
+    "PORT": "8001"
+  },
+  "build": {
+    "commands": [
+      "yarn install",
+      "yarn deploy"
+    ]
+  },
+  "database": {
+    "type": "supabase",
+    "migrations": [
+      "supabase_schema_clean.sql",
+      "complete_user_limits_update.sql", 
+      "enhanced_template_management.sql",
+      "supabase_stripe_schema_compatible.sql",
+      "enterprise_invitation_system.sql"
+    ]
+  },
+  "monitoring": {
+    "health_checks": true,
+    "logging": true
+  }
+}
