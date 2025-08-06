@@ -177,9 +177,20 @@ const stats = await getUserUsageStats(userId);
 │   ├── lib/             # Utilities and services
 │   ├── pages/           # Route components
 │   └── main.tsx         # App entry point
-├── supabase_schema_clean.sql  # Database schema
-├── .env.example         # Environment template
-└── DEPLOYMENT_GUIDE_v2.md    # Production deployment
+├── server/              # Express backend (minimal)
+├── netlify/functions/   # Netlify serverless functions (Stripe)
+├── Database SQL Files:
+│   ├── supabase_schema_clean.sql          # Core schema
+│   ├── complete_user_limits_update.sql    # Usage limits
+│   ├── enhanced_template_management.sql   # Templates
+│   ├── supabase_stripe_schema_compatible.sql # Billing
+│   └── enterprise_invitation_system.sql  # Enterprise
+├── Documentation:
+│   ├── README.md                    # This file
+│   ├── DATABASE_DEPLOYMENT_FINAL.md # Database setup
+│   ├── DEPLOYMENT_READY.md          # Production deployment
+│   └── N8N_ENCRYPTION_SETUP.md     # N8N workflows
+└── .env                            # Environment configuration
 ```
 
 ### Key Components
