@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import DashboardLayout from "@/components/DashboardLayout";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { supabase, supabaseServiceRole, isSupabaseConfigured, isServiceRoleConfigured } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
   Crown,
