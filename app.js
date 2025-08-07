@@ -1,4 +1,4 @@
-const http = require('http');
+import http from 'http';
 
 console.log('🚀 Starting MailoReply AI Server...');
 
