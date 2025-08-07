@@ -77,20 +77,61 @@ export default function EnterpriseManagement() {
 
   const fetchEnterprises = async () => {
     try {
-      // TODO: Replace with real Supabase queries
-      // const { data: companies } = await supabase.from('companies').select('*');
-      // Process and set enterprises data
+      if (!isSupabaseConfigured || !supabase) {
+        console.error('Supabase not configured');
+        setLoading(false);
+        return;
+      }
 
-      // Temporary placeholder - remove when Supabase is connected
-      setEnterprises([]);
-      setSystemStats({
-        totalEnterprises: 0,
-        totalUsers: 0,
-        totalRevenue: 0,
-        totalGenerations: 0
-      });
+      // Fetch companies from Supabase
+      const { data: companies, error: companiesError } = await supabase
+        .from('companies')
+        .select(`
+          *,
+          users (
+            id,
+            name,
+            email,
+            role
+          )
+        `);
+
+      if (companiesError) {
+        console.error('Error fetching companies:', companiesError);
+        setEnterprises([]);
+      } else {
+        // Transform Supabase data to Enterprise format
+        const transformedEnterprises: Enterprise[] = companies.map(company => ({
+          id: company.id,
+          name: company.name,
+          domain: company.domain || '',
+          users: company.current_users || 0,
+          maxUsers: company.max_users || 0,
+          generationsUsed: 0, // TODO: Calculate from ai_generations table
+          generationsLimit: -1, // Unlimited for enterprises
+          monthlyPayment: company.monthly_payment || 999.99,
+          status: company.status === 'active' ? 'active' : 'suspended',
+          contractEnd: company.contract_end,
+          manager: company.users?.find((u: any) => u.role === 'enterprise_manager')?.name || 'No Manager'
+        }));
+
+        setEnterprises(transformedEnterprises);
+
+        // Calculate system stats
+        const totalEnterprises = companies.length;
+        const totalUsers = companies.reduce((sum, company) => sum + (company.current_users || 0), 0);
+        const totalRevenue = companies.reduce((sum, company) => sum + (company.monthly_payment || 0), 0);
+        
+        setSystemStats({
+          totalEnterprises,
+          totalUsers,
+          totalRevenue,
+          totalGenerations: 0 // TODO: Calculate from ai_generations table
+        });
+      }
     } catch (error) {
       console.error('Error fetching enterprises:', error);
+      setEnterprises([]);
     } finally {
       setLoading(false);
     }
