@@ -24,7 +24,7 @@ import {
   Info
 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/NewAuthContext';
 import { UsageStatsCard } from '@/components/UsageIndicator';
 import { generateAIReply, generateAIEmail, isN8NConfigured } from '@/lib/n8n-service';
 import { trackGeneration, canUserGenerate, getUserUsageStats } from '@/lib/usage-tracking';
