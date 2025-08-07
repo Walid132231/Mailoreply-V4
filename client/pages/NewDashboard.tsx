@@ -283,18 +283,18 @@ export default function NewDashboard() {
                           <span className="text-sm font-medium text-green-900">Monthly Usage</span>
                           <TrendingUp className="h-4 w-4 text-green-600" />
                         </div>
-                        {usageStats.isUnlimited ? (
+                        {usageStats.isUnlimited || usageStats.monthly.limit === -1 ? (
                           <p className="text-2xl font-bold text-green-900">Unlimited</p>
                         ) : (
                           <>
                             <p className="text-2xl font-bold text-green-900">
-                              {usageStats.monthly.used}/{usageStats.monthly.limit}
+                              {usageStats.monthly.used || 0}/{usageStats.monthly.limit || 0}
                             </p>
                             <div className="w-full bg-green-200 rounded-full h-2 mt-2">
                               <div 
                                 className="bg-green-600 h-2 rounded-full" 
                                 style={{ 
-                                  width: `${Math.min((usageStats.monthly.used / usageStats.monthly.limit) * 100, 100)}%` 
+                                  width: `${Math.min(((usageStats.monthly.used || 0) / (usageStats.monthly.limit || 1)) * 100, 100)}%` 
                                 }}
                               />
                             </div>
