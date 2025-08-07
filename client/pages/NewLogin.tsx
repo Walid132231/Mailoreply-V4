@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,11 +16,23 @@ export default function NewLogin() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const { login, loginWithGoogle } = useAuth();
+  const { login, loginWithGoogle, user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const from = location.state?.from?.pathname || '/dashboard';
+
+  // Auto-redirect if user is already logged in
+  useEffect(() => {
+    if (user && !loading && !isLoading) {
+      console.log('🎯 User is already logged in, redirecting to dashboard...');
+      setIsRedirecting(true);
+      setSuccess('Already logged in! Redirecting...');
+      setTimeout(() => {
+        navigate(from, { replace: true });
+      }, 500);
+    }
+  }, [user, loading, navigate, from, isLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,16 +43,42 @@ export default function NewLogin() {
     setSuccess('');
 
     try {
+      console.log('🔐 Starting login process...');
       const result = await login(email, password);
       
       if (result.success) {
+        console.log('✅ Login API call successful, waiting for auth state...');
         setSuccess('Login successful! Redirecting...');
-        setIsRedirecting(true);
         
-        // Small delay for better UX
-        setTimeout(() => {
-          navigate(from, { replace: true });
-        }, 800);
+        // Wait for user to be set by auth state change
+        const waitForUser = () => {
+          const checkUser = (attempts = 0) => {
+            if (attempts > 50) { // 10 seconds maximum wait
+              console.log('⚠️ Timeout waiting for user, redirecting anyway...');
+              setIsRedirecting(true);
+              navigate(from, { replace: true });
+              return;
+            }
+            
+            // Check if AuthContext has the user
+            setTimeout(() => {
+              const currentUser = document.querySelector('[data-user-loaded="true"]');
+              if (currentUser || attempts > 25) { // 5 seconds minimum wait
+                console.log('✅ User loaded, redirecting to dashboard...');
+                setIsRedirecting(true);
+                setTimeout(() => {
+                  navigate(from, { replace: true });
+                }, 300);
+              } else {
+                console.log(`🔄 Waiting for user... attempt ${attempts + 1}`);
+                checkUser(attempts + 1);
+              }
+            }, 200);
+          };
+          checkUser();
+        };
+        
+        waitForUser();
       } else {
         setError(result.error || 'Login failed. Please check your credentials.');
       }
