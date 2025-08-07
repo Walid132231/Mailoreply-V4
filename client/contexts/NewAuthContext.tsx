@@ -70,6 +70,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true);
   const [deviceFingerprint] = useState<string>(() => generateDeviceFingerprint());
 
+  // Fix page reload/tab switching issue with visibility API
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && session && !user) {
+        // Page became visible and we have session but no user - refresh user data
+        console.log('🔄 Page became visible, refreshing user data...');
+        fetchUserProfile(session.user);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [session, user]);
+
   // Initialize authentication
   useEffect(() => {
     initializeAuth();
