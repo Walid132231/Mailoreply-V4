@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
-Backend Test Suite for MailoReply AI Enterprise Invitation System
-Tests all enterprise invitation functionality including database functions,
-user limits, company management, and email integration.
+Backend Test Suite for MailoReply AI Authentication System and API Health
+Tests authentication flow, API endpoints, and Settings page navigation functionality.
 """
 
 import os
@@ -15,17 +14,24 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 import sys
 
-# Configuration
-SUPABASE_URL = "https://dfzspjqgvdzosrddqcje.supabase.co"
-SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmenNwanFndmR6b3NyZGRxY2plIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5ODc4MTEsImV4cCI6MjA2OTU2MzgxMX0.XGwGU6VEftwzqqWM5b_r6F42qrjBtw4a1Saq4LB_-HU"
+# Configuration from .env file
+SUPABASE_URL = "https://wacuqgyyctatwnbemkyx.supabase.co"
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhY3VxZ3l5Y3RhdHduYmVta3l4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyMzc5MTQsImV4cCI6MjA2OTgxMzkxNH0.Re8cuKLAtm7cy-AshX7F5-Gj0MC8VEu1OBigI6wCDk8"
 SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhY3VxZ3l5Y3RhdHduYmVta3l4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDIzNzkxNCwiZXhwIjoyMDY5ODEzOTE0fQ.yfQNpr0Rk9Xlr7fVTOu8-GXBoo2Wc-P_Gjc7R3_W9CA"
 
 # Database connection details
-DB_HOST = "db.dfzspjqgvdzosrddqcje.supabase.co"
+DB_HOST = "db.wacuqgyyctatwnbemkyx.supabase.co"
 DB_PORT = 5432
 DB_NAME = "postgres"
 DB_USER = "postgres"
 DB_PASSWORD = "Walidjakarta1997!"
+
+# Test user credentials
+TEST_USER_EMAIL = "admin@mailoreply.com"
+TEST_USER_PASSWORD = "Admin123!"
+
+# API Base URL (from server configuration)
+API_BASE_URL = "http://localhost:8080"
 
 class EnterpriseInvitationTester:
     def __init__(self):
