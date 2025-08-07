@@ -341,8 +341,10 @@ class EnterpriseCreationTester:
                 )
                 return False
             
-            # Test manager user data
+            # Test manager user data - need to provide ID for users table
+            manager_id = str(uuid.uuid4())
             manager_data = {
+                'id': manager_id,  # Users table requires explicit ID
                 'name': 'Enterprise Manager',
                 'email': 'manager@testcorp.com',
                 'role': 'enterprise_manager',
