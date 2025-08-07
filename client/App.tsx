@@ -5,7 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "@/pages/Index";
 import NotFound from "@/pages/NotFound";
-import Login from "@/pages/Login";
+import NewLogin from "@/pages/NewLogin";
 import Signup from "@/pages/Signup";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
