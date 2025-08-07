@@ -67,29 +67,35 @@ class EnterpriseCreationTester:
             print(f"⚠️ Cleanup warning: {e}")
     
     async def cleanup_test_data(self):
-        """Remove test data created during testing"""
+        """Remove test data created during testing via API"""
         try:
-            async with self.db_pool.acquire() as conn:
-                # Delete test invitations
-                for invitation_id in self.test_data['invitations']:
-                    await conn.execute(
-                        "DELETE FROM user_invitations WHERE id = $1",
-                        invitation_id
-                    )
-                
-                # Delete test users
-                for user_id in self.test_data['users']:
-                    await conn.execute(
-                        "DELETE FROM users WHERE id = $1",
-                        user_id
-                    )
-                
-                # Delete test companies
-                for company_id in self.test_data['companies']:
-                    await conn.execute(
-                        "DELETE FROM companies WHERE id = $1",
-                        company_id
-                    )
+            headers = {
+                'apikey': SUPABASE_SERVICE_ROLE_KEY,
+                'Authorization': f'Bearer {SUPABASE_SERVICE_ROLE_KEY}',
+                'Content-Type': 'application/json'
+            }
+            
+            # Delete test users
+            for user_id in self.test_data['users']:
+                try:
+                    async with self.session.delete(
+                        f"{SUPABASE_API_URL}/users?id=eq.{user_id}",
+                        headers=headers
+                    ) as response:
+                        pass  # Ignore response for cleanup
+                except:
+                    pass
+            
+            # Delete test companies
+            for company_id in self.test_data['companies']:
+                try:
+                    async with self.session.delete(
+                        f"{SUPABASE_API_URL}/companies?id=eq.{company_id}",
+                        headers=headers
+                    ) as response:
+                        pass  # Ignore response for cleanup
+                except:
+                    pass
                         
             print("✅ Test data cleaned up")
             
