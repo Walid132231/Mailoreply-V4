@@ -50,35 +50,34 @@ export default function NewLogin() {
         console.log('✅ Login API call successful, waiting for auth state...');
         setSuccess('Login successful! Redirecting...');
         
-        // Wait for user to be set by auth state change
-        const waitForUser = () => {
-          const checkUser = (attempts = 0) => {
-            if (attempts > 50) { // 10 seconds maximum wait
+        // Wait for user to be set by monitoring the user state
+        let attempts = 0;
+        const maxAttempts = 50; // 10 seconds max
+        
+        const checkForUser = () => {
+          attempts++;
+          
+          // Force a small delay then check if we have a user
+          setTimeout(() => {
+            // The user state will be updated by the AuthContext
+            if (user || attempts > maxAttempts) {
+              console.log('✅ User state updated, redirecting to dashboard...');
+              setIsRedirecting(true);
+              setTimeout(() => {
+                navigate(from, { replace: true });
+              }, 300);
+            } else if (attempts < maxAttempts) {
+              console.log(`🔄 Waiting for user state... attempt ${attempts}`);
+              checkForUser();
+            } else {
               console.log('⚠️ Timeout waiting for user, redirecting anyway...');
               setIsRedirecting(true);
               navigate(from, { replace: true });
-              return;
             }
-            
-            // Check if AuthContext has the user
-            setTimeout(() => {
-              const currentUser = document.querySelector('[data-user-loaded="true"]');
-              if (currentUser || attempts > 25) { // 5 seconds minimum wait
-                console.log('✅ User loaded, redirecting to dashboard...');
-                setIsRedirecting(true);
-                setTimeout(() => {
-                  navigate(from, { replace: true });
-                }, 300);
-              } else {
-                console.log(`🔄 Waiting for user... attempt ${attempts + 1}`);
-                checkUser(attempts + 1);
-              }
-            }, 200);
-          };
-          checkUser();
+          }, 200);
         };
         
-        waitForUser();
+        checkForUser();
       } else {
         setError(result.error || 'Login failed. Please check your credentials.');
       }
