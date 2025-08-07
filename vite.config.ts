@@ -8,6 +8,11 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "0.0.0.0",
     port: 8080,
+    allowedHosts: [
+      "localhost",
+      ".emergentagent.com",
+      "7fd0a94d-1117-456f-9ca4-fedd6d4606d2.preview.emergentagent.com"
+    ],
     watch: {
       usePolling: true,
       interval: 1000,
