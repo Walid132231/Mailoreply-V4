@@ -128,7 +128,7 @@ function AppContent() {
 
 // Enhanced Dashboard Router Component with role-specific features
 function DashboardRouter() {
-  return <EnhancedDashboard />;
+  return <NewDashboard />;
 }
 
 export default function App() {
