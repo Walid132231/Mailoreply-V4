@@ -79,12 +79,6 @@ function AppContent() {
           </ProtectedRoute>
         } />
 
-        <Route path="/dashboard/admin-settings" element={
-          <ProtectedRoute requireRole={['superuser']}>
-            <AdminSettings />
-          </ProtectedRoute>
-        } />
-
         <Route path="/dashboard/settings" element={
           <ProtectedRoute>
             <Settings />
@@ -94,6 +88,13 @@ function AppContent() {
         <Route path="/dashboard/subscription" element={
           <ProtectedRoute>
             <Subscription />
+          </ProtectedRoute>
+        } />
+
+        {/* Fallback for unknown dashboard routes */}
+        <Route path="/dashboard/*" element={
+          <ProtectedRoute>
+            <NewDashboard />
           </ProtectedRoute>
         } />
       </Routes>
