@@ -52,7 +52,7 @@ export default function NewDashboard() {
     // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 1500));
     
-    // Mock data based on user role
+    // Mock data based on user role - ensure proper unlimited handling
     const mockStats: UsageStats = user?.role === 'superuser' ? {
       daily: { used: 0, limit: -1, remaining: -1 },
       monthly: { used: 0, limit: -1, remaining: -1 },
