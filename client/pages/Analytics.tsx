@@ -13,7 +13,7 @@ import {
   Users,
   Building2
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/NewAuthContext";
 
 // Mock analytics data based on user role
 const getAnalyticsData = (userRole: string) => {
