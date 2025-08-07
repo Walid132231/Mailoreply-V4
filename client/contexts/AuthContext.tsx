@@ -120,7 +120,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
           return;
         }
         
-        throw new Error(`Failed to fetch user profile: ${response.status}`);
+        // Even if profile fetch fails, set basic user info to unblock login
+        const basicUser: User = {
+          id: supabaseUser.id,
+          email: supabaseUser.email || '',
+          name: supabaseUser.user_metadata?.name || 'User',
+          role: 'free',
+          status: 'active',
+          daily_limit: 3,
+          monthly_limit: 30,
+          device_limit: 1,
+          daily_usage: 0,
+          monthly_usage: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        setUser(basicUser);
+        setLoading(false);
+        return;
       }
 
       const users = await response.json();
@@ -128,17 +145,29 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const userData = users[0];
         setUser(userData);
 
-        // Fetch user settings
-        await fetchUserSettings(userData.id);
-
-        // Fetch company data if user belongs to one
-        if (userData.company_id) {
-          await fetchCompanyProfile(userData.company_id);
+        // Fetch user settings (don't let this block login)
+        try {
+          await fetchUserSettings(userData.id);
+        } catch (settingsError) {
+          console.error('Failed to fetch settings, using defaults:', settingsError);
         }
 
-        // Register/update device
-        await registerDevice(deviceFingerprint, getUserAgentDevice());
-        await updateDeviceActivity(deviceFingerprint);
+        // Fetch company data if user belongs to one (don't let this block login)
+        if (userData.company_id) {
+          try {
+            await fetchCompanyProfile(userData.company_id);
+          } catch (companyError) {
+            console.error('Failed to fetch company, continuing:', companyError);
+          }
+        }
+
+        // Register/update device (don't let this block login)
+        try {
+          await registerDevice(deviceFingerprint, getUserAgentDevice());
+          await updateDeviceActivity(deviceFingerprint);
+        } catch (deviceError) {
+          console.error('Failed to register device, continuing:', deviceError);
+        }
       } else {
         console.log('No user found, creating new profile');
         await createUserProfile(supabaseUser);
@@ -146,6 +175,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
+      
+      // Ensure we don't block login - set basic user info
+      const basicUser: User = {
+        id: supabaseUser.id,
+        email: supabaseUser.email || '',
+        name: supabaseUser.user_metadata?.name || 'User',
+        role: 'free',
+        status: 'active',
+        daily_limit: 3,
+        monthly_limit: 30,
+        device_limit: 1,
+        daily_usage: 0,
+        monthly_usage: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      setUser(basicUser);
     } finally {
       setLoading(false);
     }
