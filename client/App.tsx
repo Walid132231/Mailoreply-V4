@@ -6,7 +6,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "@/pages/Index";
 import NotFound from "@/pages/NotFound";
 import NewLogin from "@/pages/NewLogin";
-import Signup from "@/pages/Signup";
+import NewSignup from "@/pages/NewSignup";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
 import HowItWorks from "@/pages/HowItWorks";
