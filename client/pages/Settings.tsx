@@ -687,9 +687,9 @@ export default function Settings() {
                   <div className="bg-gray-50 rounded-lg p-4">
                     <h4 className="font-medium text-gray-900 mb-2">Password Requirements</h4>
                     <ul className="text-sm text-gray-600 space-y-1">
-                      <li>• Minimum 6 characters long</li>
-                      <li>• Use a combination of letters, numbers, and special characters</li>
-                      <li>• Avoid using easily guessable information</li>
+                      <li>&#8226; Minimum 6 characters long</li>
+                      <li>&#8226; Use a combination of letters, numbers, and special characters</li>
+                      <li>&#8226; Avoid using easily guessable information</li>
                     </ul>
                   </div>
                   
