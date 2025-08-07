@@ -224,6 +224,20 @@ export default function Settings() {
     );
   }
 
+  // Define tabs based on user role
+  const availableTabs = [
+    { value: 'profile', icon: User, label: 'Profile' },
+    { value: 'preferences', icon: SettingsIcon, label: 'Preferences' },
+    { value: 'security', icon: Shield, label: 'Security' },
+    { value: 'devices', icon: Monitor, label: 'Devices' },
+    { value: 'account', icon: Key, label: 'Account' },
+  ];
+
+  // Only add billing tab for non-superusers
+  if (user.role !== 'superuser') {
+    availableTabs.push({ value: 'billing', icon: Crown, label: 'Billing' });
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -250,30 +264,12 @@ export default function Settings() {
 
         <Tabs defaultValue="profile" className="space-y-6">
           <TabsList>
-            <TabsTrigger value="profile" className="flex items-center space-x-2">
-              <User className="h-4 w-4" />
-              <span>Profile</span>
-            </TabsTrigger>
-            <TabsTrigger value="preferences" className="flex items-center space-x-2">
-              <SettingsIcon className="h-4 w-4" />
-              <span>Preferences</span>
-            </TabsTrigger>
-            <TabsTrigger value="security" className="flex items-center space-x-2">
-              <Shield className="h-4 w-4" />
-              <span>Security</span>
-            </TabsTrigger>
-            <TabsTrigger value="devices" className="flex items-center space-x-2">
-              <Monitor className="h-4 w-4" />
-              <span>Devices</span>
-            </TabsTrigger>
-            <TabsTrigger value="account" className="flex items-center space-x-2">
-              <Key className="h-4 w-4" />
-              <span>Account</span>
-            </TabsTrigger>
-            <TabsTrigger value="billing" className="flex items-center space-x-2">
-              <Crown className="h-4 w-4" />
-              <span>Billing</span>
-            </TabsTrigger>
+            {availableTabs.map((tab) => (
+              <TabsTrigger key={tab.value} value={tab.value} className="flex items-center space-x-2">
+                <tab.icon className="h-4 w-4" />
+                <span>{tab.label}</span>
+              </TabsTrigger>
+            ))}
           </TabsList>
 
           {/* Profile Tab */}
@@ -317,12 +313,14 @@ export default function Settings() {
                     <div className="flex items-center space-x-2">
                       <span className="text-sm font-medium">Account Role</span>
                       <Badge variant="outline">
-                        {user.role.replace('_', ' ').toUpperCase()}
+                        {user.role === 'superuser' ? 'SYSTEM ADMINISTRATOR' : user.role.replace('_', ' ').toUpperCase()}
                       </Badge>
                     </div>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Contact your administrator to change your role
-                    </p>
+                    {user.role !== 'superuser' && (
+                      <p className="text-sm text-gray-500 mt-1">
+                        Contact your administrator to change your role
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -723,7 +721,7 @@ export default function Settings() {
                       <Label className="text-sm font-medium text-gray-600">Account Type</Label>
                       <div className="mt-1">
                         <Badge variant="outline" className="text-sm">
-                          {user.role.replace('_', ' ').toUpperCase()}
+                          {user.role === 'superuser' ? 'SYSTEM ADMINISTRATOR' : user.role.replace('_', ' ').toUpperCase()}
                         </Badge>
                       </div>
                     </div>
@@ -813,12 +811,14 @@ export default function Settings() {
             </div>
           </TabsContent>
 
-          {/* Billing Tab */}
-          <TabsContent value="billing">
-            <div className="space-y-6">
-              <SubscriptionManager />
-            </div>
-          </TabsContent>
+          {/* Billing Tab - only show for non-superusers */}
+          {user.role !== 'superuser' && (
+            <TabsContent value="billing">
+              <div className="space-y-6">
+                <SubscriptionManager />
+              </div>
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </DashboardLayout>

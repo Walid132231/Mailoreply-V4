@@ -39,8 +39,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     { name: 'AI Generator', href: '/dashboard/ai-generator', icon: Zap },
     { name: 'Templates', href: '/dashboard/templates', icon: FileText },
     { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
-    { name: 'Subscription', href: '/dashboard/subscription', icon: CreditCard },
   ];
+
+  // Only add subscription for non-superuser roles
+  if (user?.role !== 'superuser') {
+    navigation.push({ name: 'Subscription', href: '/dashboard/subscription', icon: CreditCard });
+  }
 
   // Add role-specific navigation
   if (user?.role === 'enterprise_manager') {
@@ -56,7 +60,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const getRoleBadge = (role: string) => {
     const roleConfig = {
-      superuser: { label: 'Admin', color: 'bg-red-100 text-red-800' },
+      superuser: { label: 'System Administrator', color: 'bg-red-100 text-red-800' },
       enterprise_manager: { label: 'Manager', color: 'bg-purple-100 text-purple-800' },
       enterprise_user: { label: 'Enterprise', color: 'bg-emerald-100 text-emerald-800' },
       pro_plus: { label: 'Pro Plus', color: 'bg-purple-100 text-purple-800' },
@@ -143,7 +147,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto p-6">
           {children}
         </main>
       </div>
