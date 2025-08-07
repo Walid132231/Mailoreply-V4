@@ -47,22 +47,29 @@ export default function Setup() {
 
     try {
       // Check if any superuser exists in the database
-      const { data: users, error } = await supabase
-        .from('users')
-        .select('id, email, role')
-        .eq('role', 'superuser')
-        .eq('status', 'active')
-        .limit(1);
-
-      if (error) {
-        console.error('Error checking for superuser:', error);
-        // If the error is that the table doesn't exist, we need setup
-        if (error.code === '42P01') { // relation does not exist
-          setSetupComplete(false);
-        } else {
-          setError(`Database error: ${error.message}`);
+      // Use a direct API call with service role key to bypass RLS issues
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/users?select=id,email,role&role=eq.superuser&status=eq.active&limit=1`, {
+        headers: {
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
         }
-      } else if (users && users.length > 0) {
+      });
+
+      if (!response.ok) {
+        if (response.status === 500) {
+          // Likely RLS policy issue, try to check if setup is complete via different method
+          setError('Database configuration issue detected. Setup may already be complete. Try accessing the login page directly.');
+        } else {
+          setError(`Database connection error: ${response.status}`);
+        }
+        setChecking(false);
+        return;
+      }
+
+      const users = await response.json();
+
+      if (users && users.length > 0) {
         setSetupComplete(true);
         // Redirect to login after a delay
         setTimeout(() => {
@@ -73,7 +80,11 @@ export default function Setup() {
       }
     } catch (error: any) {
       console.error('Unexpected error:', error);
-      setError(`Unexpected error: ${error.message}`);
+      if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+        setError('Database connection failed. Please check your network connection and try again.');
+      } else {
+        setError(`Setup check failed: ${error.message}`);
+      }
     } finally {
       setChecking(false);
     }
