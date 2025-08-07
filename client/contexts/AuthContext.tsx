@@ -153,27 +153,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const fetchUserSettings = async (userId: string) => {
     try {
-      const { data: settingsData, error: settingsError } = await supabase
-        .from('user_settings')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-
-      if (settingsError) {
-        // Create default settings if they don't exist
-        if (settingsError.code === 'PGRST116') {
-          const { data: newSettings, error: createError } = await supabase
-            .from('user_settings')
-            .insert([{ user_id: userId }])
-            .select()
-            .single();
-
-          if (!createError && newSettings) {
-            setSettings(newSettings);
-          }
+      const serviceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhY3VxZ3l5Y3RhdHduYmVta3l4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDIzNzkxNCwiZXhwIjoyMDY5ODEzOTE0fQ.yfQNpr0Rk9Xlr7fVTOu8-GXBoo2Wc-P_Gjc7R3_W9CA';
+      
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/user_settings?select=*&user_id=eq.${userId}`, {
+        headers: {
+          'apikey': serviceRoleKey,
+          'Authorization': `Bearer ${serviceRoleKey}`,
+          'Content-Type': 'application/json'
         }
-      } else {
-        setSettings(settingsData);
+      });
+
+      if (response.ok) {
+        const settings = await response.json();
+        if (settings && settings.length > 0) {
+          setSettings(settings[0]);
+        }
       }
     } catch (error) {
       console.error('Error fetching user settings:', error);
