@@ -109,9 +109,9 @@ export default function EnterpriseManagement() {
           maxUsers: company.max_users || 0,
           generationsUsed: 0, // TODO: Calculate from ai_generations table
           generationsLimit: -1, // Unlimited for enterprises
-          monthlyPayment: company.monthly_payment || 999.99,
+          monthlyPayment: 999.99, // Fixed value since column doesn't exist in schema
           status: company.status === 'active' ? 'active' : 'suspended',
-          contractEnd: company.contract_end,
+          contractEnd: undefined, // Field doesn't exist in schema
           manager: company.users?.find((u: any) => u.role === 'enterprise_manager')?.name || 'No Manager'
         }));
 
