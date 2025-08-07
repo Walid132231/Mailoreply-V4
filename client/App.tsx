@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/NewAuthContext";
 import Header from "@/components/Header";
 import { Toaster } from '@/components/ui/toaster';
 import ProtectedRoute from "@/components/ProtectedRoute";
