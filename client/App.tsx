@@ -115,7 +115,7 @@ function AppContent() {
 
         {/* Auth Pages */}
         <Route path="/login" element={<NewLogin />} />
-        <Route path="/signup" element={<Signup />} />
+        <Route path="/signup" element={<NewSignup />} />
         {/* Setup is complete - redirect to login */}
         <Route path="/setup" element={<Login />} />
 
