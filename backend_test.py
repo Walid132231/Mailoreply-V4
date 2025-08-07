@@ -29,7 +29,7 @@ DB_PASSWORD = "Walidjakarta1997!"
 # Supabase API endpoints
 SUPABASE_API_URL = f"{SUPABASE_URL}/rest/v1"
 
-class EnterpriseInvitationTester:
+class EnterpriseCreationTester:
     def __init__(self):
         self.db_pool = None
         self.session = None
@@ -126,742 +126,690 @@ class EnterpriseInvitationTester:
         
         if details and not success:
             print(f"   Details: {details}")
-    
-    async def test_database_schema(self):
-        """Test 1: Verify database schema exists"""
+
+    async def test_database_schema_validation(self):
+        """Test 1: Verify database schema matches expected structure"""
         try:
             async with self.db_pool.acquire() as conn:
-                # Check if user_invitations table exists
-                table_exists = await conn.fetchval("""
-                    SELECT EXISTS (
-                        SELECT FROM information_schema.tables 
-                        WHERE table_schema = 'public' 
-                        AND table_name = 'user_invitations'
-                    )
-                """)
-                
-                if not table_exists:
-                    self.log_test_result(
-                        "Database Schema - user_invitations table",
-                        False,
-                        "user_invitations table does not exist"
-                    )
-                    return False
-                
-                # Check table structure
-                columns = await conn.fetch("""
+                # Check companies table structure
+                companies_columns = await conn.fetch("""
                     SELECT column_name, data_type, is_nullable
                     FROM information_schema.columns
-                    WHERE table_name = 'user_invitations'
+                    WHERE table_name = 'companies'
                     ORDER BY ordinal_position
                 """)
                 
-                required_columns = {
-                    'id', 'email', 'name', 'company_id', 'invited_by', 
-                    'role', 'status', 'invitation_token', 'expires_at'
-                }
+                companies_column_names = {col['column_name'] for col in companies_columns}
                 
-                existing_columns = {col['column_name'] for col in columns}
-                missing_columns = required_columns - existing_columns
-                
-                if missing_columns:
+                # Verify corrected schema - should have 'plan' not 'plan_type'
+                if 'plan' not in companies_column_names:
                     self.log_test_result(
-                        "Database Schema - table structure",
+                        "Database Schema - Companies Table",
                         False,
-                        f"Missing columns: {missing_columns}",
-                        {'existing_columns': list(existing_columns)}
+                        "Missing 'plan' column in companies table"
                     )
                     return False
                 
-                # Check if functions exist
-                functions_to_check = [
-                    'invite_enterprise_user',
-                    'bulk_invite_enterprise_users',
-                    'accept_invitation',
-                    'get_pending_invitations',
-                    'cancel_invitation',
-                    'resend_invitation'
-                ]
+                # Verify monthly_payment column is NOT present (was removed)
+                if 'monthly_payment' in companies_column_names:
+                    self.log_test_result(
+                        "Database Schema - Companies Table",
+                        False,
+                        "Found 'monthly_payment' column - should have been removed"
+                    )
+                    return False
                 
-                for func_name in functions_to_check:
-                    func_exists = await conn.fetchval("""
-                        SELECT EXISTS (
-                            SELECT FROM pg_proc p
-                            JOIN pg_namespace n ON p.pronamespace = n.oid
-                            WHERE n.nspname = 'public' AND p.proname = $1
-                        )
-                    """, func_name)
-                    
-                    if not func_exists:
-                        self.log_test_result(
-                            f"Database Schema - {func_name} function",
-                            False,
-                            f"Function {func_name} does not exist"
-                        )
-                        return False
+                # Check required columns exist
+                required_columns = {
+                    'id', 'name', 'plan', 'max_users', 'current_users', 
+                    'domain', 'status', 'created_at', 'updated_at'
+                }
+                
+                missing_columns = required_columns - companies_column_names
+                if missing_columns:
+                    self.log_test_result(
+                        "Database Schema - Companies Table",
+                        False,
+                        f"Missing required columns: {missing_columns}"
+                    )
+                    return False
+                
+                # Check plan enum values
+                plan_enum_values = await conn.fetchval("""
+                    SELECT array_agg(enumlabel::text)
+                    FROM pg_enum e
+                    JOIN pg_type t ON e.enumtypid = t.oid
+                    WHERE t.typname = 'plan_type'
+                """)
+                
+                if 'enterprise' not in plan_enum_values:
+                    self.log_test_result(
+                        "Database Schema - Plan Enum",
+                        False,
+                        f"'enterprise' not found in plan enum values: {plan_enum_values}"
+                    )
+                    return False
                 
                 self.log_test_result(
-                    "Database Schema",
+                    "Database Schema Validation",
                     True,
-                    "All required tables and functions exist",
-                    {'columns': len(existing_columns), 'functions': len(functions_to_check)}
+                    "Schema correctly updated - 'plan' column exists, 'monthly_payment' removed",
+                    {
+                        'companies_columns': list(companies_column_names),
+                        'plan_enum_values': plan_enum_values
+                    }
                 )
                 return True
                 
         except Exception as e:
             self.log_test_result(
-                "Database Schema",
+                "Database Schema Validation",
                 False,
                 f"Schema validation failed: {str(e)}"
             )
             return False
-    
-    async def create_test_company(self) -> Optional[str]:
-        """Create a test company for testing"""
+
+    async def test_company_creation_with_service_role(self):
+        """Test 2: Test company creation using service role client (bypasses RLS)"""
         try:
-            company_id = str(uuid.uuid4())
-            async with self.db_pool.acquire() as conn:
-                await conn.execute("""
-                    INSERT INTO companies (id, name, plan_type, max_users, current_users)
-                    VALUES ($1, $2, $3, $4, $5)
-                """, company_id, "Test Enterprise Corp", "enterprise", 10, 0)
+            # Test data matching the fixed schema
+            test_company_data = {
+                'name': 'Test Enterprise Corp',
+                'domain': 'testcorp.com',
+                'plan': 'enterprise',  # Using 'plan' not 'plan_type'
+                'max_users': 50,
+                'current_users': 0,
+                'status': 'active'
+            }
+            
+            headers = {
+                'apikey': SUPABASE_SERVICE_ROLE_KEY,
+                'Authorization': f'Bearer {SUPABASE_SERVICE_ROLE_KEY}',
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+            }
+            
+            # Create company via Supabase REST API using service role
+            async with self.session.post(
+                f"{SUPABASE_API_URL}/companies",
+                json=test_company_data,
+                headers=headers
+            ) as response:
                 
+                if response.status != 201:
+                    error_text = await response.text()
+                    self.log_test_result(
+                        "Company Creation with Service Role",
+                        False,
+                        f"Failed to create company. Status: {response.status}",
+                        {'error': error_text, 'test_data': test_company_data}
+                    )
+                    return False
+                
+                company_data = await response.json()
+                
+                if not company_data or not isinstance(company_data, list) or len(company_data) == 0:
+                    self.log_test_result(
+                        "Company Creation with Service Role",
+                        False,
+                        "No company data returned from creation"
+                    )
+                    return False
+                
+                created_company = company_data[0]
+                company_id = created_company.get('id')
+                
+                if not company_id:
+                    self.log_test_result(
+                        "Company Creation with Service Role",
+                        False,
+                        "No company ID returned"
+                    )
+                    return False
+                
+                # Store for cleanup
                 self.test_data['companies'].append(company_id)
-                return company_id
+                
+                # Verify the company was created with correct data
+                if created_company.get('plan') != 'enterprise':
+                    self.log_test_result(
+                        "Company Creation with Service Role",
+                        False,
+                        f"Plan field incorrect. Expected: 'enterprise', Got: {created_company.get('plan')}"
+                    )
+                    return False
+                
+                # Verify no monthly_payment field is present
+                if 'monthly_payment' in created_company:
+                    self.log_test_result(
+                        "Company Creation with Service Role",
+                        False,
+                        "monthly_payment field should not be present in response"
+                    )
+                    return False
+                
+                self.log_test_result(
+                    "Company Creation with Service Role",
+                    True,
+                    "Company created successfully with corrected schema",
+                    {
+                        'company_id': company_id,
+                        'name': created_company.get('name'),
+                        'plan': created_company.get('plan'),
+                        'max_users': created_company.get('max_users')
+                    }
+                )
+                return True
                 
         except Exception as e:
-            print(f"Failed to create test company: {e}")
-            return None
-    
-    async def create_test_manager(self, company_id: str) -> Optional[str]:
-        """Create a test enterprise manager"""
+            self.log_test_result(
+                "Company Creation with Service Role",
+                False,
+                f"Company creation test failed: {str(e)}"
+            )
+            return False
+
+    async def test_enterprise_manager_creation(self):
+        """Test 3: Test enterprise manager user creation"""
         try:
-            manager_id = str(uuid.uuid4())
-            async with self.db_pool.acquire() as conn:
-                await conn.execute("""
-                    INSERT INTO users (id, name, email, role, company_id, status)
-                    VALUES ($1, $2, $3, $4, $5, $6)
-                """, manager_id, "Test Manager", "manager@testcorp.com", 
-                "enterprise_manager", company_id, "active")
-                
-                self.test_data['users'].append(manager_id)
-                return manager_id
-                
-        except Exception as e:
-            print(f"Failed to create test manager: {e}")
-            return None
-    
-    async def test_invite_enterprise_user_function(self):
-        """Test 2: Test invite_enterprise_user function"""
-        try:
-            # Create test company and manager
+            # First create a company
             company_id = await self.create_test_company()
             if not company_id:
                 self.log_test_result(
-                    "Invite Enterprise User - Setup",
+                    "Enterprise Manager Creation - Setup",
                     False,
                     "Failed to create test company"
                 )
                 return False
             
-            manager_id = await self.create_test_manager(company_id)
-            if not manager_id:
-                self.log_test_result(
-                    "Invite Enterprise User - Setup",
-                    False,
-                    "Failed to create test manager"
-                )
-                return False
-            
-            # Test the invitation function
-            async with self.db_pool.acquire() as conn:
-                result = await conn.fetchval("""
-                    SELECT invite_enterprise_user(
-                        $1::TEXT,  -- user_email
-                        $2::TEXT,  -- user_name
-                        $3::user_role,  -- user_role
-                        $4::UUID   -- manager_user_id
-                    )
-                """, "testuser@testcorp.com", "Test User", "enterprise_user", manager_id)
-                
-                if not result:
-                    self.log_test_result(
-                        "Invite Enterprise User Function",
-                        False,
-                        "Function returned null result"
-                    )
-                    return False
-                
-                # Parse JSON result
-                invitation_result = json.loads(result) if isinstance(result, str) else result
-                
-                if not invitation_result.get('success'):
-                    self.log_test_result(
-                        "Invite Enterprise User Function",
-                        False,
-                        f"Invitation failed: {invitation_result.get('error', 'Unknown error')}",
-                        invitation_result
-                    )
-                    return False
-                
-                # Verify invitation was created in database
-                invitation_id = invitation_result.get('invitation_id')
-                if invitation_id:
-                    self.test_data['invitations'].append(invitation_id)
-                    
-                    invitation_record = await conn.fetchrow("""
-                        SELECT * FROM user_invitations WHERE id = $1
-                    """, invitation_id)
-                    
-                    if not invitation_record:
-                        self.log_test_result(
-                            "Invite Enterprise User Function",
-                            False,
-                            "Invitation record not found in database"
-                        )
-                        return False
-                
-                self.log_test_result(
-                    "Invite Enterprise User Function",
-                    True,
-                    "Successfully created enterprise user invitation",
-                    {
-                        'invitation_id': invitation_id,
-                        'email': invitation_result.get('email'),
-                        'company_name': invitation_result.get('company_name')
-                    }
-                )
-                return True
-                
-        except Exception as e:
-            self.log_test_result(
-                "Invite Enterprise User Function",
-                False,
-                f"Function test failed: {str(e)}"
-            )
-            return False
-    
-    async def test_bulk_invite_function(self):
-        """Test 3: Test bulk_invite_enterprise_users function"""
-        try:
-            # Create test company and manager
-            company_id = await self.create_test_company()
-            manager_id = await self.create_test_manager(company_id)
-            
-            if not company_id or not manager_id:
-                self.log_test_result(
-                    "Bulk Invite Function - Setup",
-                    False,
-                    "Failed to create test setup"
-                )
-                return False
-            
-            # Prepare bulk invitation data
-            users_data = [
-                {"email": "bulk1@testcorp.com", "name": "Bulk User 1", "role": "enterprise_user"},
-                {"email": "bulk2@testcorp.com", "name": "Bulk User 2", "role": "enterprise_user"},
-                {"email": "bulk3@testcorp.com", "name": "Bulk User 3", "role": "enterprise_manager"}
-            ]
-            
-            async with self.db_pool.acquire() as conn:
-                result = await conn.fetchval("""
-                    SELECT bulk_invite_enterprise_users(
-                        $1::JSON,  -- users_data
-                        $2::UUID   -- manager_user_id
-                    )
-                """, json.dumps(users_data), manager_id)
-                
-                if not result:
-                    self.log_test_result(
-                        "Bulk Invite Function",
-                        False,
-                        "Function returned null result"
-                    )
-                    return False
-                
-                # Parse JSON result
-                bulk_result = json.loads(result) if isinstance(result, str) else result
-                
-                if not bulk_result.get('success'):
-                    self.log_test_result(
-                        "Bulk Invite Function",
-                        False,
-                        f"Bulk invitation failed: {bulk_result.get('error', 'Unknown error')}",
-                        bulk_result
-                    )
-                    return False
-                
-                # Verify results
-                total_processed = bulk_result.get('total_processed', 0)
-                successful_count = bulk_result.get('successful_count', 0)
-                failed_count = bulk_result.get('failed_count', 0)
-                
-                if total_processed != len(users_data):
-                    self.log_test_result(
-                        "Bulk Invite Function",
-                        False,
-                        f"Expected {len(users_data)} processed, got {total_processed}"
-                    )
-                    return False
-                
-                # Store invitation IDs for cleanup
-                successful_invitations = bulk_result.get('successful_invitations', [])
-                for invitation in successful_invitations:
-                    if isinstance(invitation, dict) and 'invitation_id' in invitation:
-                        self.test_data['invitations'].append(invitation['invitation_id'])
-                
-                self.log_test_result(
-                    "Bulk Invite Function",
-                    True,
-                    f"Successfully processed {total_processed} invitations",
-                    {
-                        'total_processed': total_processed,
-                        'successful': successful_count,
-                        'failed': failed_count
-                    }
-                )
-                return True
-                
-        except Exception as e:
-            self.log_test_result(
-                "Bulk Invite Function",
-                False,
-                f"Bulk invite test failed: {str(e)}"
-            )
-            return False
-    
-    async def test_user_limits_enforcement(self):
-        """Test 4: Test user limits are properly enforced"""
-        try:
-            # Create company with low user limit
-            company_id = str(uuid.uuid4())
-            async with self.db_pool.acquire() as conn:
-                await conn.execute("""
-                    INSERT INTO companies (id, name, plan_type, max_users, current_users)
-                    VALUES ($1, $2, $3, $4, $5)
-                """, company_id, "Limited Test Corp", "enterprise", 2, 1)  # Only 1 slot left
-                
-                self.test_data['companies'].append(company_id)
-                
-                # Create manager
-                manager_id = await self.create_test_manager(company_id)
-                
-                # Try to invite user (should succeed - 1 slot available)
-                result1 = await conn.fetchval("""
-                    SELECT invite_enterprise_user(
-                        $1::TEXT, $2::TEXT, $3::user_role, $4::UUID
-                    )
-                """, "user1@limited.com", "User 1", "enterprise_user", manager_id)
-                
-                invitation1 = json.loads(result1) if isinstance(result1, str) else result1
-                
-                if not invitation1.get('success'):
-                    self.log_test_result(
-                        "User Limits Enforcement",
-                        False,
-                        "First invitation should have succeeded",
-                        invitation1
-                    )
-                    return False
-                
-                # Update current_users to max
-                await conn.execute("""
-                    UPDATE companies SET current_users = max_users WHERE id = $1
-                """, company_id)
-                
-                # Try to invite another user (should fail - no slots left)
-                result2 = await conn.fetchval("""
-                    SELECT invite_enterprise_user(
-                        $1::TEXT, $2::TEXT, $3::user_role, $4::UUID
-                    )
-                """, "user2@limited.com", "User 2", "enterprise_user", manager_id)
-                
-                invitation2 = json.loads(result2) if isinstance(result2, str) else result2
-                
-                if invitation2.get('success'):
-                    self.log_test_result(
-                        "User Limits Enforcement",
-                        False,
-                        "Second invitation should have failed due to user limit",
-                        invitation2
-                    )
-                    return False
-                
-                # Check error message mentions user limit
-                error_msg = invitation2.get('error', '').lower()
-                if 'limit' not in error_msg and 'maximum' not in error_msg:
-                    self.log_test_result(
-                        "User Limits Enforcement",
-                        False,
-                        "Error message should mention user limit",
-                        {'error': invitation2.get('error')}
-                    )
-                    return False
-                
-                self.log_test_result(
-                    "User Limits Enforcement",
-                    True,
-                    "User limits properly enforced",
-                    {
-                        'first_invitation': 'succeeded',
-                        'second_invitation': 'failed_as_expected',
-                        'error_message': invitation2.get('error')
-                    }
-                )
-                return True
-                
-        except Exception as e:
-            self.log_test_result(
-                "User Limits Enforcement",
-                False,
-                f"User limits test failed: {str(e)}"
-            )
-            return False
-    
-    async def test_invitation_acceptance(self):
-        """Test 5: Test invitation acceptance workflow"""
-        try:
-            # Create test setup
-            company_id = await self.create_test_company()
-            manager_id = await self.create_test_manager(company_id)
-            
-            # Create invitation
-            async with self.db_pool.acquire() as conn:
-                invite_result = await conn.fetchval("""
-                    SELECT invite_enterprise_user(
-                        $1::TEXT, $2::TEXT, $3::user_role, $4::UUID
-                    )
-                """, "accept@testcorp.com", "Accept User", "enterprise_user", manager_id)
-                
-                invitation = json.loads(invite_result) if isinstance(invite_result, str) else invite_result
-                
-                if not invitation.get('success'):
-                    self.log_test_result(
-                        "Invitation Acceptance - Setup",
-                        False,
-                        "Failed to create invitation for acceptance test"
-                    )
-                    return False
-                
-                invitation_token = invitation.get('invitation_token')
-                if not invitation_token:
-                    self.log_test_result(
-                        "Invitation Acceptance - Setup",
-                        False,
-                        "No invitation token returned"
-                    )
-                    return False
-                
-                # Create a user to accept the invitation
-                accepting_user_id = str(uuid.uuid4())
-                await conn.execute("""
-                    INSERT INTO users (id, name, email, role, status)
-                    VALUES ($1, $2, $3, $4, $5)
-                """, accepting_user_id, "Accept User", "accept@testcorp.com", "free", "active")
-                
-                self.test_data['users'].append(accepting_user_id)
-                
-                # Test invitation acceptance
-                accept_result = await conn.fetchval("""
-                    SELECT accept_invitation($1::UUID, $2::UUID)
-                """, invitation_token, accepting_user_id)
-                
-                acceptance = json.loads(accept_result) if isinstance(accept_result, str) else accept_result
-                
-                if not acceptance.get('success'):
-                    self.log_test_result(
-                        "Invitation Acceptance",
-                        False,
-                        f"Invitation acceptance failed: {acceptance.get('error')}",
-                        acceptance
-                    )
-                    return False
-                
-                # Verify user was updated
-                updated_user = await conn.fetchrow("""
-                    SELECT role, company_id, status FROM users WHERE id = $1
-                """, accepting_user_id)
-                
-                if not updated_user:
-                    self.log_test_result(
-                        "Invitation Acceptance",
-                        False,
-                        "User record not found after acceptance"
-                    )
-                    return False
-                
-                if updated_user['company_id'] != company_id:
-                    self.log_test_result(
-                        "Invitation Acceptance",
-                        False,
-                        "User company_id not updated correctly"
-                    )
-                    return False
-                
-                if updated_user['role'] != 'enterprise_user':
-                    self.log_test_result(
-                        "Invitation Acceptance",
-                        False,
-                        f"User role not updated correctly: {updated_user['role']}"
-                    )
-                    return False
-                
-                # Verify invitation status updated
-                invitation_status = await conn.fetchval("""
-                    SELECT status FROM user_invitations WHERE invitation_token = $1
-                """, invitation_token)
-                
-                if invitation_status != 'accepted':
-                    self.log_test_result(
-                        "Invitation Acceptance",
-                        False,
-                        f"Invitation status not updated: {invitation_status}"
-                    )
-                    return False
-                
-                self.log_test_result(
-                    "Invitation Acceptance",
-                    True,
-                    "Invitation acceptance workflow completed successfully",
-                    {
-                        'user_role': updated_user['role'],
-                        'company_id': str(updated_user['company_id']),
-                        'invitation_status': invitation_status
-                    }
-                )
-                return True
-                
-        except Exception as e:
-            self.log_test_result(
-                "Invitation Acceptance",
-                False,
-                f"Invitation acceptance test failed: {str(e)}"
-            )
-            return False
-    
-    async def test_superuser_permissions(self):
-        """Test 6: Test superuser can access all enterprise data"""
-        try:
-            # Create superuser
-            superuser_id = str(uuid.uuid4())
-            async with self.db_pool.acquire() as conn:
-                await conn.execute("""
-                    INSERT INTO users (id, name, email, role, status)
-                    VALUES ($1, $2, $3, $4, $5)
-                """, superuser_id, "Super Admin", "superadmin@mailoreply.ai", "superuser", "active")
-                
-                self.test_data['users'].append(superuser_id)
-                
-                # Test if superuser can view all companies
-                companies = await conn.fetch("""
-                    SELECT id, name FROM companies
-                """)
-                
-                if not companies:
-                    self.log_test_result(
-                        "Superuser Permissions",
-                        False,
-                        "No companies found for superuser access test"
-                    )
-                    return False
-                
-                # Test if superuser can view all invitations
-                invitations = await conn.fetch("""
-                    SELECT id, email, status FROM user_invitations
-                """)
-                
-                self.log_test_result(
-                    "Superuser Permissions",
-                    True,
-                    "Superuser can access enterprise data",
-                    {
-                        'companies_accessible': len(companies),
-                        'invitations_accessible': len(invitations)
-                    }
-                )
-                return True
-                
-        except Exception as e:
-            self.log_test_result(
-                "Superuser Permissions",
-                False,
-                f"Superuser permissions test failed: {str(e)}"
-            )
-            return False
-    
-    async def test_invitation_expiration(self):
-        """Test 7: Test invitation expiration logic"""
-        try:
-            company_id = await self.create_test_company()
-            manager_id = await self.create_test_manager(company_id)
-            
-            async with self.db_pool.acquire() as conn:
-                # Create an expired invitation manually
-                expired_invitation_id = str(uuid.uuid4())
-                expired_token = str(uuid.uuid4())
-                
-                await conn.execute("""
-                    INSERT INTO user_invitations 
-                    (id, email, name, company_id, invited_by, role, status, invitation_token, expires_at)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-                """, expired_invitation_id, "expired@test.com", "Expired User", 
-                company_id, manager_id, "enterprise_user", "pending", 
-                expired_token, datetime.now() - timedelta(days=1))  # Expired yesterday
-                
-                self.test_data['invitations'].append(expired_invitation_id)
-                
-                # Try to accept expired invitation
-                test_user_id = str(uuid.uuid4())
-                await conn.execute("""
-                    INSERT INTO users (id, name, email, role, status)
-                    VALUES ($1, $2, $3, $4, $5)
-                """, test_user_id, "Test User", "expired@test.com", "free", "active")
-                
-                self.test_data['users'].append(test_user_id)
-                
-                accept_result = await conn.fetchval("""
-                    SELECT accept_invitation($1::UUID, $2::UUID)
-                """, expired_token, test_user_id)
-                
-                acceptance = json.loads(accept_result) if isinstance(accept_result, str) else accept_result
-                
-                if acceptance.get('success'):
-                    self.log_test_result(
-                        "Invitation Expiration",
-                        False,
-                        "Expired invitation should not be acceptable"
-                    )
-                    return False
-                
-                # Check error message mentions expiration
-                error_msg = acceptance.get('error', '').lower()
-                if 'expired' not in error_msg and 'invalid' not in error_msg:
-                    self.log_test_result(
-                        "Invitation Expiration",
-                        False,
-                        "Error message should mention expiration",
-                        {'error': acceptance.get('error')}
-                    )
-                    return False
-                
-                # Test cleanup function
-                cleanup_result = await conn.fetchval("""
-                    SELECT cleanup_expired_invitations()
-                """)
-                
-                if cleanup_result is None:
-                    self.log_test_result(
-                        "Invitation Expiration",
-                        False,
-                        "Cleanup function returned null"
-                    )
-                    return False
-                
-                # Verify expired invitation status updated
-                updated_status = await conn.fetchval("""
-                    SELECT status FROM user_invitations WHERE id = $1
-                """, expired_invitation_id)
-                
-                if updated_status != 'expired':
-                    self.log_test_result(
-                        "Invitation Expiration",
-                        False,
-                        f"Expired invitation status not updated: {updated_status}"
-                    )
-                    return False
-                
-                self.log_test_result(
-                    "Invitation Expiration",
-                    True,
-                    "Invitation expiration logic working correctly",
-                    {
-                        'expired_invitations_cleaned': cleanup_result,
-                        'error_message': acceptance.get('error')
-                    }
-                )
-                return True
-                
-        except Exception as e:
-            self.log_test_result(
-                "Invitation Expiration",
-                False,
-                f"Invitation expiration test failed: {str(e)}"
-            )
-            return False
-    
-    async def test_email_service_integration(self):
-        """Test 8: Test email service integration (mock test)"""
-        try:
-            # This is a mock test since we don't have actual email service configured
-            # In a real environment, this would test actual email sending
-            
-            # Test email template generation
-            invitation_data = {
-                'to': 'test@example.com',
-                'name': 'Test User',
-                'company_name': 'Test Company',
-                'manager_name': 'Test Manager',
-                'manager_email': 'manager@test.com',
-                'invitation_url': 'https://app.mailoreply.ai/accept/token123',
-                'expires_at': (datetime.now() + timedelta(days=7)).isoformat(),
-                'role': 'enterprise_user'
+            # Test manager user data
+            manager_data = {
+                'name': 'Enterprise Manager',
+                'email': 'manager@testcorp.com',
+                'role': 'enterprise_manager',
+                'company_id': company_id,
+                'daily_limit': -1,
+                'monthly_limit': -1,
+                'device_limit': -1,
+                'status': 'active'
             }
             
-            # Simulate email template validation
-            required_fields = ['to', 'name', 'company_name', 'manager_name', 'invitation_url']
-            missing_fields = [field for field in required_fields if not invitation_data.get(field)]
+            headers = {
+                'apikey': SUPABASE_SERVICE_ROLE_KEY,
+                'Authorization': f'Bearer {SUPABASE_SERVICE_ROLE_KEY}',
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+            }
             
-            if missing_fields:
+            # Create manager user via Supabase REST API
+            async with self.session.post(
+                f"{SUPABASE_API_URL}/users",
+                json=manager_data,
+                headers=headers
+            ) as response:
+                
+                if response.status != 201:
+                    error_text = await response.text()
+                    self.log_test_result(
+                        "Enterprise Manager Creation",
+                        False,
+                        f"Failed to create manager. Status: {response.status}",
+                        {'error': error_text}
+                    )
+                    return False
+                
+                user_data = await response.json()
+                
+                if not user_data or not isinstance(user_data, list) or len(user_data) == 0:
+                    self.log_test_result(
+                        "Enterprise Manager Creation",
+                        False,
+                        "No user data returned from creation"
+                    )
+                    return False
+                
+                created_user = user_data[0]
+                user_id = created_user.get('id')
+                
+                if not user_id:
+                    self.log_test_result(
+                        "Enterprise Manager Creation",
+                        False,
+                        "No user ID returned"
+                    )
+                    return False
+                
+                # Store for cleanup
+                self.test_data['users'].append(user_id)
+                
+                # Verify user was created with correct role and company
+                if created_user.get('role') != 'enterprise_manager':
+                    self.log_test_result(
+                        "Enterprise Manager Creation",
+                        False,
+                        f"Role incorrect. Expected: 'enterprise_manager', Got: {created_user.get('role')}"
+                    )
+                    return False
+                
+                if created_user.get('company_id') != company_id:
+                    self.log_test_result(
+                        "Enterprise Manager Creation",
+                        False,
+                        f"Company ID incorrect. Expected: {company_id}, Got: {created_user.get('company_id')}"
+                    )
+                    return False
+                
                 self.log_test_result(
-                    "Email Service Integration",
-                    False,
-                    f"Missing required email fields: {missing_fields}"
+                    "Enterprise Manager Creation",
+                    True,
+                    "Enterprise manager created successfully",
+                    {
+                        'user_id': user_id,
+                        'email': created_user.get('email'),
+                        'role': created_user.get('role'),
+                        'company_id': created_user.get('company_id')
+                    }
                 )
-                return False
-            
-            # Validate email format
-            import re
-            email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-            if not re.match(email_pattern, invitation_data['to']):
-                self.log_test_result(
-                    "Email Service Integration",
-                    False,
-                    "Invalid email format"
-                )
-                return False
-            
-            # Validate URL format
-            if not invitation_data['invitation_url'].startswith(('http://', 'https://')):
-                self.log_test_result(
-                    "Email Service Integration",
-                    False,
-                    "Invalid invitation URL format"
-                )
-                return False
-            
-            self.log_test_result(
-                "Email Service Integration",
-                True,
-                "Email service integration validation passed",
-                {
-                    'template_fields': len(invitation_data),
-                    'email_format': 'valid',
-                    'url_format': 'valid'
-                }
-            )
-            return True
-            
+                return True
+                
         except Exception as e:
             self.log_test_result(
-                "Email Service Integration",
+                "Enterprise Manager Creation",
                 False,
-                f"Email service test failed: {str(e)}"
+                f"Manager creation test failed: {str(e)}"
             )
             return False
-    
+
+    async def test_data_retrieval_without_monthly_payment(self):
+        """Test 4: Test data retrieval works without monthly_payment field"""
+        try:
+            # Create test company
+            company_id = await self.create_test_company()
+            if not company_id:
+                self.log_test_result(
+                    "Data Retrieval Test - Setup",
+                    False,
+                    "Failed to create test company"
+                )
+                return False
+            
+            headers = {
+                'apikey': SUPABASE_SERVICE_ROLE_KEY,
+                'Authorization': f'Bearer {SUPABASE_SERVICE_ROLE_KEY}',
+                'Content-Type': 'application/json'
+            }
+            
+            # Fetch companies data (simulating fetchEnterprises function)
+            async with self.session.get(
+                f"{SUPABASE_API_URL}/companies?select=*,users(id,name,email,role)",
+                headers=headers
+            ) as response:
+                
+                if response.status != 200:
+                    error_text = await response.text()
+                    self.log_test_result(
+                        "Data Retrieval without monthly_payment",
+                        False,
+                        f"Failed to fetch companies. Status: {response.status}",
+                        {'error': error_text}
+                    )
+                    return False
+                
+                companies_data = await response.json()
+                
+                if not companies_data:
+                    self.log_test_result(
+                        "Data Retrieval without monthly_payment",
+                        False,
+                        "No companies data returned"
+                    )
+                    return False
+                
+                # Find our test company
+                test_company = None
+                for company in companies_data:
+                    if company.get('id') == company_id:
+                        test_company = company
+                        break
+                
+                if not test_company:
+                    self.log_test_result(
+                        "Data Retrieval without monthly_payment",
+                        False,
+                        "Test company not found in results"
+                    )
+                    return False
+                
+                # Verify monthly_payment field is not present
+                if 'monthly_payment' in test_company:
+                    self.log_test_result(
+                        "Data Retrieval without monthly_payment",
+                        False,
+                        "monthly_payment field should not be present in response"
+                    )
+                    return False
+                
+                # Verify required fields are present
+                required_fields = ['id', 'name', 'plan', 'max_users', 'current_users']
+                missing_fields = [field for field in required_fields if field not in test_company]
+                
+                if missing_fields:
+                    self.log_test_result(
+                        "Data Retrieval without monthly_payment",
+                        False,
+                        f"Missing required fields: {missing_fields}"
+                    )
+                    return False
+                
+                # Test data transformation (simulating EnterpriseManagement.tsx logic)
+                transformed_data = {
+                    'id': test_company.get('id'),
+                    'name': test_company.get('name'),
+                    'domain': test_company.get('domain', ''),
+                    'users': test_company.get('current_users', 0),
+                    'maxUsers': test_company.get('max_users', 0),
+                    'monthlyPayment': 999.99,  # Fixed value as in the code
+                    'status': 'active' if test_company.get('status') == 'active' else 'suspended'
+                }
+                
+                self.log_test_result(
+                    "Data Retrieval without monthly_payment",
+                    True,
+                    "Data retrieval and transformation successful",
+                    {
+                        'company_fields': list(test_company.keys()),
+                        'transformed_data': transformed_data
+                    }
+                )
+                return True
+                
+        except Exception as e:
+            self.log_test_result(
+                "Data Retrieval without monthly_payment",
+                False,
+                f"Data retrieval test failed: {str(e)}"
+            )
+            return False
+
+    async def test_complete_enterprise_creation_workflow(self):
+        """Test 5: Test complete enterprise creation workflow"""
+        try:
+            # Simulate the complete workflow from EnterpriseManagement.tsx
+            enterprise_data = {
+                'name': 'Complete Test Corp',
+                'domain': 'completetest.com',
+                'managerName': 'Complete Manager',
+                'managerEmail': 'complete@testcorp.com',
+                'maxUsers': 25
+            }
+            
+            headers = {
+                'apikey': SUPABASE_SERVICE_ROLE_KEY,
+                'Authorization': f'Bearer {SUPABASE_SERVICE_ROLE_KEY}',
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+            }
+            
+            # Step 1: Create company
+            company_payload = {
+                'name': enterprise_data['name'],
+                'domain': enterprise_data['domain'],
+                'plan': 'enterprise',
+                'max_users': enterprise_data['maxUsers'],
+                'current_users': 0,
+                'status': 'active'
+            }
+            
+            async with self.session.post(
+                f"{SUPABASE_API_URL}/companies",
+                json=company_payload,
+                headers=headers
+            ) as response:
+                
+                if response.status != 201:
+                    error_text = await response.text()
+                    self.log_test_result(
+                        "Complete Enterprise Creation - Company",
+                        False,
+                        f"Company creation failed. Status: {response.status}",
+                        {'error': error_text}
+                    )
+                    return False
+                
+                company_result = await response.json()
+                company = company_result[0]
+                company_id = company['id']
+                self.test_data['companies'].append(company_id)
+            
+            # Step 2: Create manager user
+            user_payload = {
+                'name': enterprise_data['managerName'],
+                'email': enterprise_data['managerEmail'],
+                'role': 'enterprise_manager',
+                'company_id': company_id,
+                'daily_limit': -1,
+                'monthly_limit': -1,
+                'device_limit': -1,
+                'status': 'active'
+            }
+            
+            async with self.session.post(
+                f"{SUPABASE_API_URL}/users",
+                json=user_payload,
+                headers=headers
+            ) as response:
+                
+                if response.status != 201:
+                    error_text = await response.text()
+                    self.log_test_result(
+                        "Complete Enterprise Creation - Manager",
+                        False,
+                        f"Manager creation failed. Status: {response.status}",
+                        {'error': error_text}
+                    )
+                    return False
+                
+                user_result = await response.json()
+                user = user_result[0]
+                user_id = user['id']
+                self.test_data['users'].append(user_id)
+            
+            # Step 3: Verify the complete setup
+            # Fetch the created company with users
+            async with self.session.get(
+                f"{SUPABASE_API_URL}/companies?id=eq.{company_id}&select=*,users(id,name,email,role)",
+                headers=headers
+            ) as response:
+                
+                if response.status != 200:
+                    self.log_test_result(
+                        "Complete Enterprise Creation - Verification",
+                        False,
+                        "Failed to verify created enterprise"
+                    )
+                    return False
+                
+                verification_data = await response.json()
+                
+                if not verification_data or len(verification_data) == 0:
+                    self.log_test_result(
+                        "Complete Enterprise Creation - Verification",
+                        False,
+                        "No enterprise data found for verification"
+                    )
+                    return False
+                
+                enterprise = verification_data[0]
+                
+                # Verify company data
+                if enterprise.get('name') != enterprise_data['name']:
+                    self.log_test_result(
+                        "Complete Enterprise Creation - Verification",
+                        False,
+                        f"Company name mismatch. Expected: {enterprise_data['name']}, Got: {enterprise.get('name')}"
+                    )
+                    return False
+                
+                if enterprise.get('plan') != 'enterprise':
+                    self.log_test_result(
+                        "Complete Enterprise Creation - Verification",
+                        False,
+                        f"Plan mismatch. Expected: 'enterprise', Got: {enterprise.get('plan')}"
+                    )
+                    return False
+                
+                # Verify manager user
+                users = enterprise.get('users', [])
+                manager = None
+                for user in users:
+                    if user.get('role') == 'enterprise_manager':
+                        manager = user
+                        break
+                
+                if not manager:
+                    self.log_test_result(
+                        "Complete Enterprise Creation - Verification",
+                        False,
+                        "No enterprise manager found"
+                    )
+                    return False
+                
+                if manager.get('email') != enterprise_data['managerEmail']:
+                    self.log_test_result(
+                        "Complete Enterprise Creation - Verification",
+                        False,
+                        f"Manager email mismatch. Expected: {enterprise_data['managerEmail']}, Got: {manager.get('email')}"
+                    )
+                    return False
+                
+                self.log_test_result(
+                    "Complete Enterprise Creation Workflow",
+                    True,
+                    "Complete enterprise creation workflow successful",
+                    {
+                        'company_id': company_id,
+                        'company_name': enterprise.get('name'),
+                        'manager_id': manager.get('id'),
+                        'manager_email': manager.get('email'),
+                        'plan': enterprise.get('plan'),
+                        'max_users': enterprise.get('max_users')
+                    }
+                )
+                return True
+                
+        except Exception as e:
+            self.log_test_result(
+                "Complete Enterprise Creation Workflow",
+                False,
+                f"Complete workflow test failed: {str(e)}"
+            )
+            return False
+
+    async def test_plan_enum_validation(self):
+        """Test 6: Test plan enum accepts 'enterprise' value"""
+        try:
+            # Test creating company with 'enterprise' plan
+            test_data = {
+                'name': 'Plan Test Corp',
+                'plan': 'enterprise',
+                'max_users': 10,
+                'current_users': 0,
+                'status': 'active'
+            }
+            
+            headers = {
+                'apikey': SUPABASE_SERVICE_ROLE_KEY,
+                'Authorization': f'Bearer {SUPABASE_SERVICE_ROLE_KEY}',
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+            }
+            
+            async with self.session.post(
+                f"{SUPABASE_API_URL}/companies",
+                json=test_data,
+                headers=headers
+            ) as response:
+                
+                if response.status != 201:
+                    error_text = await response.text()
+                    self.log_test_result(
+                        "Plan Enum Validation",
+                        False,
+                        f"Failed to create company with 'enterprise' plan. Status: {response.status}",
+                        {'error': error_text}
+                    )
+                    return False
+                
+                company_data = await response.json()
+                created_company = company_data[0]
+                company_id = created_company.get('id')
+                
+                if company_id:
+                    self.test_data['companies'].append(company_id)
+                
+                if created_company.get('plan') != 'enterprise':
+                    self.log_test_result(
+                        "Plan Enum Validation",
+                        False,
+                        f"Plan value not saved correctly. Expected: 'enterprise', Got: {created_company.get('plan')}"
+                    )
+                    return False
+                
+                self.log_test_result(
+                    "Plan Enum Validation",
+                    True,
+                    "Plan enum correctly accepts 'enterprise' value",
+                    {'company_id': company_id, 'plan': created_company.get('plan')}
+                )
+                return True
+                
+        except Exception as e:
+            self.log_test_result(
+                "Plan Enum Validation",
+                False,
+                f"Plan enum validation failed: {str(e)}"
+            )
+            return False
+
+    async def create_test_company(self) -> Optional[str]:
+        """Helper method to create a test company"""
+        try:
+            company_data = {
+                'name': f'Test Company {uuid.uuid4().hex[:8]}',
+                'plan': 'enterprise',
+                'max_users': 50,
+                'current_users': 0,
+                'status': 'active'
+            }
+            
+            headers = {
+                'apikey': SUPABASE_SERVICE_ROLE_KEY,
+                'Authorization': f'Bearer {SUPABASE_SERVICE_ROLE_KEY}',
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+            }
+            
+            async with self.session.post(
+                f"{SUPABASE_API_URL}/companies",
+                json=company_data,
+                headers=headers
+            ) as response:
+                
+                if response.status == 201:
+                    result = await response.json()
+                    company_id = result[0]['id']
+                    self.test_data['companies'].append(company_id)
+                    return company_id
+                
+                return None
+                
+        except Exception as e:
+            print(f"Failed to create test company: {e}")
+            return None
+
     async def run_all_tests(self):
         """Run all tests in sequence"""
-        print("🚀 Starting Enterprise Invitation System Tests")
+        print("🚀 Starting Enterprise Creation Functionality Tests")
         print("=" * 60)
         
         # Initialize
@@ -871,14 +819,12 @@ class EnterpriseInvitationTester:
         
         # Run tests
         tests = [
-            self.test_database_schema,
-            self.test_invite_enterprise_user_function,
-            self.test_bulk_invite_function,
-            self.test_user_limits_enforcement,
-            self.test_invitation_acceptance,
-            self.test_superuser_permissions,
-            self.test_invitation_expiration,
-            self.test_email_service_integration
+            self.test_database_schema_validation,
+            self.test_company_creation_with_service_role,
+            self.test_enterprise_manager_creation,
+            self.test_data_retrieval_without_monthly_payment,
+            self.test_complete_enterprise_creation_workflow,
+            self.test_plan_enum_validation
         ]
         
         passed = 0
@@ -909,7 +855,7 @@ class EnterpriseInvitationTester:
         print(f"📈 Success Rate: {(passed / (passed + failed) * 100):.1f}%")
         
         if failed == 0:
-            print("\n🎉 All tests passed! Enterprise invitation system is working correctly.")
+            print("\n🎉 All tests passed! Enterprise creation functionality is working correctly.")
         else:
             print(f"\n⚠️ {failed} test(s) failed. Please review the issues above.")
         
@@ -917,7 +863,7 @@ class EnterpriseInvitationTester:
 
 async def main():
     """Main test runner"""
-    tester = EnterpriseInvitationTester()
+    tester = EnterpriseCreationTester()
     success = await tester.run_all_tests()
     
     # Exit with appropriate code
