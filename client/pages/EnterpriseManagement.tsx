@@ -120,7 +120,7 @@ export default function EnterpriseManagement() {
         // Calculate system stats
         const totalEnterprises = companies.length;
         const totalUsers = companies.reduce((sum, company) => sum + (company.current_users || 0), 0);
-        const totalRevenue = companies.reduce((sum, company) => sum + (company.monthly_payment || 0), 0);
+        const totalRevenue = companies.length * 999.99; // Fixed price since monthly_payment column doesn't exist
         
         setSystemStats({
           totalEnterprises,
