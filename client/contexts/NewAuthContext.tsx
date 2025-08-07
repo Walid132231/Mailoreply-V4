@@ -114,77 +114,97 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const fetchUserProfile = async (supabaseUser: SupabaseUser) => {
+    console.log('🔄 Starting fetchUserProfile for:', supabaseUser.email);
     setLoading(true);
     
     try {
-      // Fetch user with proper RLS (authenticated request)
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', supabaseUser.id)
-        .single();
+      // Add timeout to prevent infinite loading
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 10000); // 10 second timeout
+      });
 
-      if (userError) {
-        // If user doesn't exist, create profile
-        if (userError.code === 'PGRST116') {
-          await createUserProfile(supabaseUser);
+      const profilePromise = async () => {
+        // Now that RLS is fixed, use normal Supabase client calls
+        console.log('📡 Fetching user profile from database...');
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', supabaseUser.id)
+          .single();
+
+        if (userError) {
+          console.error('❌ Error fetching user profile:', userError.message);
+          
+          // If user doesn't exist, create profile
+          if (userError.code === 'PGRST116') {
+            console.log('👤 User not found, creating profile...');
+            await createUserProfile(supabaseUser);
+            return;
+          }
+          
+          // Create fallback user object to prevent blocking
+          console.log('🔄 Creating fallback user to prevent blocking...');
+          const fallbackUser: User = {
+            id: supabaseUser.id,
+            email: supabaseUser.email || '',
+            name: supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0] || 'User',
+            role: 'free',
+            status: 'active',
+            daily_limit: 3,
+            monthly_limit: 30,
+            device_limit: 1,
+            daily_usage: 0,
+            monthly_usage: 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          setUser(fallbackUser);
           return;
         }
-        
-        console.error('❌ Error fetching user profile:', userError.message);
-        
-        // Create fallback user object to prevent blocking
-        const fallbackUser: User = {
-          id: supabaseUser.id,
-          email: supabaseUser.email || '',
-          name: supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0] || 'User',
-          role: 'free',
-          status: 'active',
-          daily_limit: 3,
-          monthly_limit: 30,
-          device_limit: 1,
-          daily_usage: 0,
-          monthly_usage: 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-        setUser(fallbackUser);
-        setLoading(false);
-        return;
-      }
 
-      // Set user data
-      setUser(userData);
+        // Set user data
+        console.log('✅ User profile loaded successfully:', userData.email, userData.role);
+        setUser(userData);
 
-      // Fetch related data in parallel (non-blocking)
-      Promise.allSettled([
-        fetchUserSettings(userData.id),
-        userData.company_id ? fetchCompanyProfile(userData.company_id) : Promise.resolve(),
-        registerUserDevice()
-      ]);
+        // Fetch related data in parallel (non-blocking)
+        console.log('🔄 Loading additional user data...');
+        try {
+          await Promise.allSettled([
+            fetchUserSettings(userData.id),
+            userData.company_id ? fetchCompanyProfile(userData.company_id) : Promise.resolve(),
+            registerUserDevice()
+          ]);
+        } catch (parallelError) {
+          console.error('⚠️ Error loading additional data (non-critical):', parallelError);
+        }
+      };
+
+      // Race between profile loading and timeout
+      await Promise.race([profilePromise(), timeoutPromise]);
 
     } catch (error) {
-      console.error('❌ Unexpected error in fetchUserProfile:', error);
+      console.error('❌ Error in fetchUserProfile (creating fallback):', error);
       
-      // Set fallback user to prevent auth blocking
+      // Always set fallback user to prevent auth blocking
       const fallbackUser: User = {
         id: supabaseUser.id,
         email: supabaseUser.email || '',
         name: supabaseUser.user_metadata?.name || 'User',
-        role: 'free',
+        role: supabaseUser.email === 'admin@mailoreply.com' ? 'superuser' : 'free', // Special case for admin
         status: 'active',
-        daily_limit: 3,
-        monthly_limit: 30,
-        device_limit: 1,
+        daily_limit: supabaseUser.email === 'admin@mailoreply.com' ? -1 : 3,
+        monthly_limit: supabaseUser.email === 'admin@mailoreply.com' ? -1 : 30,
+        device_limit: supabaseUser.email === 'admin@mailoreply.com' ? -1 : 1,
         daily_usage: 0,
         monthly_usage: 0,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
       setUser(fallbackUser);
+    } finally {
+      console.log('✅ fetchUserProfile completed, setting loading to false');
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   const createUserProfile = async (supabaseUser: SupabaseUser) => {
