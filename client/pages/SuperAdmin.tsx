@@ -442,12 +442,14 @@ export default function SuperAdmin() {
     setSuccess('');
 
     try {
-      if (!isSupabaseConfigured) {
-        throw new Error('Supabase not configured');
+      if (!isServiceRoleConfigured || !supabaseServiceRole) {
+        throw new Error('Service role not configured. Please contact administrator.');
       }
 
-      // Create company first
-      const { data: company, error: companyError } = await supabase
+      console.log('Creating enterprise with service role client...');
+
+      // Create company first using service role client (bypasses RLS)
+      const { data: company, error: companyError } = await supabaseServiceRole
         .from('companies')
         .insert({
           name: newEnterprise.companyName,
@@ -459,10 +461,15 @@ export default function SuperAdmin() {
         .select()
         .single();
 
-      if (companyError) throw companyError;
+      if (companyError) {
+        console.error('Error creating company:', companyError);
+        throw companyError;
+      }
 
-      // Create manager user
-      const { data: userData, error: userError } = await supabase
+      console.log('Company created successfully:', company);
+
+      // Create manager user using service role client (bypasses RLS)
+      const { data: userData, error: userError } = await supabaseServiceRole
         .from('users')
         .insert({
           name: newEnterprise.name,
@@ -477,10 +484,15 @@ export default function SuperAdmin() {
         .select()
         .single();
 
-      if (userError) throw userError;
+      if (userError) {
+        console.error('Error creating user:', userError);
+        throw userError;
+      }
 
-      // Send invitation to the manager
-      const { data: inviteResult, error: inviteError } = await supabase
+      console.log('User created successfully:', userData);
+
+      // Send invitation to the manager using service role client
+      const { data: inviteResult, error: inviteError } = await supabaseServiceRole
         .rpc('invite_enterprise_user', {
           user_email: newEnterprise.email,
           user_name: newEnterprise.name,
@@ -488,11 +500,16 @@ export default function SuperAdmin() {
           manager_user_id: user?.id
         });
 
-      if (inviteError) throw inviteError;
-
-      if (!inviteResult.success) {
-        throw new Error(inviteResult.error || 'Failed to send invitation');
+      if (inviteError) {
+        console.error('Error sending invitation:', inviteError);
+        throw inviteError;
       }
+
+      if (!inviteResult?.success) {
+        throw new Error(inviteResult?.error || 'Failed to send invitation');
+      }
+
+      console.log('Invitation sent successfully');
 
       setSuccess(`Enterprise "${newEnterprise.companyName}" created and invitation sent to ${newEnterprise.email}`);
       setIsCreateDialogOpen(false);
@@ -509,7 +526,7 @@ export default function SuperAdmin() {
       loadData();
     } catch (error: any) {
       console.error('Error creating enterprise:', error);
-      setError(error.message || 'Failed to create enterprise');
+      setError(error.message || 'Failed to create enterprise. Please check the console for details.');
     } finally {
       setCreateLoading(false);
     }
