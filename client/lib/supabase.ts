@@ -4,6 +4,7 @@ import { Database } from './supabase-types';
 // Environment variables for Supabase
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 
 // Check if Supabase is configured with real values (not demo/placeholder values)
 export const isSupabaseConfigured = !!(
@@ -13,6 +14,13 @@ export const isSupabaseConfigured = !!(
   !supabaseUrl.includes('your-project-id') &&
   !supabaseAnonKey.includes('demo-anon-key') &&
   !supabaseAnonKey.includes('your-supabase-anon-key')
+);
+
+// Check if service role is configured
+export const isServiceRoleConfigured = !!(
+  supabaseUrl &&
+  supabaseServiceRoleKey &&
+  isSupabaseConfigured
 );
 
 // Create Supabase client with proper configuration or null if not configured
@@ -29,6 +37,16 @@ export const supabase = isSupabaseConfigured
           eventsPerSecond: 10,
         },
       },
+    })
+  : null;
+
+// Create service role client for administrative operations (bypasses RLS)
+export const supabaseServiceRole = isServiceRoleConfigured
+  ? createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
     })
   : null;
 
