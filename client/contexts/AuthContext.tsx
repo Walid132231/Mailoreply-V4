@@ -166,7 +166,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (response.ok) {
         const settings = await response.json();
         if (settings && settings.length > 0) {
-          setSettings(settings[0]);
+          setUserSettings(settings[0]);
         }
       }
     } catch (error) {
