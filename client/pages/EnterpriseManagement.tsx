@@ -158,10 +158,9 @@ export default function EnterpriseManagement() {
         .insert({
           name: newEnterprise.name,
           domain: newEnterprise.domain,
-          plan_type: 'enterprise',
+          plan: 'enterprise',
           max_users: newEnterprise.maxUsers,
           current_users: 0,
-          monthly_payment: newEnterprise.monthlyPayment,
           status: 'active',
           created_at: new Date().toISOString()
         })
