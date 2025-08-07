@@ -527,10 +527,10 @@ export default function Settings() {
                   <div className="bg-gray-50 rounded-lg p-4">
                     <h4 className="font-medium text-gray-900 mb-2">How Encryption Works</h4>
                     <ul className="text-sm text-gray-600 space-y-1">
-                      <li>• Content is encrypted using AES-256-GCM before being sent to AI services</li>
-                      <li>• Encryption keys are managed securely in your browser</li>
-                      <li>• AI services never receive your plain text content</li>
-                      <li>• Responses are decrypted locally before being displayed</li>
+                      <li>&#8226; Content is encrypted using AES-256-GCM before being sent to AI services</li>
+                      <li>&#8226; Encryption keys are managed securely in your browser</li>
+                      <li>&#8226; AI services never receive your plain text content</li>
+                      <li>&#8226; Responses are decrypted locally before being displayed</li>
                     </ul>
                   </div>
 
