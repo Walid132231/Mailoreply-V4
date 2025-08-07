@@ -7,7 +7,6 @@ import Index from "@/pages/Index";
 import NotFound from "@/pages/NotFound";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
-import Setup from "@/pages/Setup";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
 import HowItWorks from "@/pages/HowItWorks";
