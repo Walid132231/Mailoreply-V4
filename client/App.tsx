@@ -41,10 +41,10 @@ function AppContent() {
   if (isDashboardPage) {
     return (
       <Routes>
-        {/* Dashboard - Role-based routing */}
+        {/* Dashboard - Main dashboard page */}
         <Route path="/dashboard" element={
           <ProtectedRoute>
-            <DashboardRouter />
+            <NewDashboard />
           </ProtectedRoute>
         } />
 
