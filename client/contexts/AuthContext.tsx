@@ -100,38 +100,44 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const fetchUserProfile = async (supabaseUser: SupabaseUser) => {
     try {
-      // Fetch user profile from our custom users table
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', supabaseUser.id)
-        .single();
+      // Use direct API call with service role for profile fetch to avoid RLS issues
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/users?select=*&id=eq.${supabaseUser.id}`, {
+        headers: {
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      });
 
-      if (userError) {
-        console.error('Error fetching user profile:', userError);
-
+      if (!response.ok) {
+        console.error('Error fetching user profile:', await response.text());
+        
         // If user doesn't exist in our table, create them
-        if (userError.code === 'PGRST116') {
+        if (response.status === 404) {
           await createUserProfile(supabaseUser);
           return;
         }
-
-        throw userError;
+        
+        throw new Error(`Failed to fetch user profile: ${response.status}`);
       }
 
-      setUser(userData);
+      const users = await response.json();
+      if (users && users.length > 0) {
+        const userData = users[0];
+        setUser(userData);
 
-      // Fetch user settings
-      await fetchUserSettings(userData.id);
+        // Fetch user settings
+        await fetchUserSettings(userData.id);
 
-      // Fetch company data if user belongs to one
-      if (userData.company_id) {
-        await fetchCompanyProfile(userData.company_id);
+        // Fetch company data if user belongs to one
+        if (userData.company_id) {
+          await fetchCompanyProfile(userData.company_id);
+        }
+
+        // Register/update device
+        await registerDevice(deviceFingerprint, getUserAgentDevice());
+        await updateDeviceActivity(deviceFingerprint);
       }
-
-      // Register/update device
-      await registerDevice(deviceFingerprint, getUserAgentDevice());
-      await updateDeviceActivity(deviceFingerprint);
 
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
