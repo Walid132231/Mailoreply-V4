@@ -113,6 +113,18 @@ backend:
         agent: "testing"
         comment: "✅ Integration points validated - proper Supabase client configuration, auth integration (autoRefreshToken, persistSession, detectSessionInUrl), environment variable usage, and connection availability checks."
 
+  - task: "Settings page navigation fix"
+    implemented: true
+    working: true
+    file: "client/pages/Settings.tsx"
+    stuck_count: 0
+    priority: "high" 
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Fixed Settings component export name from 'SettingsNew' to 'Settings' to match App.tsx import. Updated supervisor config to run proper Vite dev server instead of simple Node.js server."
+
 frontend:
   - task: "SuperAdmin dashboard UI"
     implemented: true
@@ -125,6 +137,18 @@ frontend:
       - working: "NA"
         agent: "testing"
         comment: "Frontend testing not required per instructions"
+
+  - task: "Settings page navigation"
+    implemented: true
+    working: "NA"
+    file: "client/pages/Settings.tsx, client/App.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Fixed component export name mismatch between Settings.tsx (was 'SettingsNew') and App.tsx import (expected 'Settings'). React app confirmed working with proper authentication redirects."
 
 metadata:
   created_by: "testing_agent"
