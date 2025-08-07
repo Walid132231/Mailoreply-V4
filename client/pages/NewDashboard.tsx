@@ -308,11 +308,11 @@ export default function NewDashboard() {
                           <span className="text-sm font-medium text-purple-900">Active Devices</span>
                           <Monitor className="h-4 w-4 text-purple-600" />
                         </div>
-                        {usageStats.isUnlimited ? (
-                          <p className="text-2xl font-bold text-purple-900">No Limit</p>
+                        {usageStats.isUnlimited || usageStats.devices.limit === -1 ? (
+                          <p className="text-2xl font-bold text-purple-900">Unlimited</p>
                         ) : (
                           <p className="text-2xl font-bold text-purple-900">
-                            {usageStats.devices.count}/{usageStats.devices.limit}
+                            {usageStats.devices.count || 0}/{usageStats.devices.limit || 0}
                           </p>
                         )}
                       </div>
