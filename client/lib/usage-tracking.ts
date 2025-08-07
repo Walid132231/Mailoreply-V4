@@ -5,57 +5,73 @@ import { UsageStats, GenerationRequest, User } from './supabase-types';
  * Get current usage statistics for a user
  */
 export async function getUserUsageStats(userId: string): Promise<UsageStats | null> {
-  if (!isSupabaseConfigured || !supabase) {
-    // Return mock data for demo mode
-    return {
-      dailyUsed: 1,
-      dailyLimit: 3,
-      monthlyUsed: 5,
-      monthlyLimit: 30,
-      deviceCount: 1,
-      deviceLimit: 1,
-      isUnlimited: false
-    };
-  }
-
   try {
+    const serviceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhY3VxZ3l5Y3RhdHduYmVta3l4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDIzNzkxNCwiZXhwIjoyMDY5ODEzOTE0fQ.yfQNpr0Rk9Xlr7fVTOu8-GXBoo2Wc-P_Gjc7R3_W9CA';
+    
     // Get user data with current usage
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    const userResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/users?select=*&id=eq.${userId}`, {
+      headers: {
+        'apikey': serviceRoleKey,
+        'Authorization': `Bearer ${serviceRoleKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
 
-    if (error || !user) {
-      console.error('Error fetching user usage:', error);
+    if (!userResponse.ok) {
+      console.error('Error fetching user usage:', await userResponse.text());
       return null;
     }
 
-    // Get device count
-    const { count: deviceCount, error: deviceError } = await supabase
-      .from('user_devices')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId);
-
-    if (deviceError) {
-      console.error('Error fetching device count:', deviceError);
+    const users = await userResponse.json();
+    if (!users || users.length === 0) {
+      return null;
     }
 
-    const isUnlimited = user.role === 'pro_plus' || 
-                       user.role === 'enterprise_manager' || 
-                       user.role === 'enterprise_user' || 
-                       user.role === 'superuser';
+    const user = users[0];
+
+    // Get device count
+    const deviceResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/user_devices?select=*&user_id=eq.${userId}&status=eq.active`, {
+      headers: {
+        'apikey': serviceRoleKey,
+        'Authorization': `Bearer ${serviceRoleKey}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'count=exact'
+      }
+    });
+
+    let deviceCount = 0;
+    if (deviceResponse.ok) {
+      const devices = await deviceResponse.json();
+      deviceCount = devices ? devices.length : 0;
+    }
+
+    const currentDate = new Date();
+    const startOfDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+    const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
 
     return {
-      dailyUsed: user.daily_usage,
-      dailyLimit: user.daily_limit,
-      monthlyUsed: user.monthly_usage,
-      monthlyLimit: user.monthly_limit,
-      deviceCount: deviceCount || 0,
-      deviceLimit: user.device_limit,
-      isUnlimited
+      daily: {
+        used: user.daily_usage || 0,
+        limit: user.daily_limit || 0,
+        remaining: Math.max(0, (user.daily_limit || 0) - (user.daily_usage || 0)),
+        resetTime: new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000)
+      },
+      monthly: {
+        used: user.monthly_usage || 0,
+        limit: user.monthly_limit || 0,
+        remaining: Math.max(0, (user.monthly_limit || 0) - (user.monthly_usage || 0)),
+        resetTime: new Date(endOfMonth.getTime() + 24 * 60 * 60 * 1000)
+      },
+      devices: {
+        count: deviceCount,
+        limit: user.device_limit || 1,
+        remaining: Math.max(0, (user.device_limit || 1) - deviceCount)
+      },
+      isUnlimited: user.daily_limit === -1 || user.role === 'superuser',
+      planType: user.role || 'free',
+      lastUpdated: new Date()
     };
-
   } catch (error) {
     console.error('Error in getUserUsageStats:', error);
     return null;
