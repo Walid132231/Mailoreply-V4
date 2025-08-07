@@ -280,6 +280,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (!error && companyData) {
         setCompany(companyData);
+        console.log('✅ Company profile loaded');
       }
     } catch (error) {
       console.error('⚠️ Error fetching company (non-critical):', error);
