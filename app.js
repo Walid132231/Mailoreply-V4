@@ -93,7 +93,7 @@ const server = http.createServer((req, res) => {
         <h1>🚀 MailoReply AI</h1>
         <div class="status">✅ PREVIEW IS WORKING!</div>
         <div class="info">AI-Powered Email Generation Platform</div>
-        <div class="info">Server running on port 8080</div>
+        <div class="info">Server running on port 80</div>
         <div class="info">
             <a href="/health" class="button">Health Check</a>
         </div>
