@@ -118,7 +118,7 @@ const server = http.createServer((req, res) => {
 </html>`);
 });
 
-const PORT = 8080;
+const PORT = 80;
 const HOST = '0.0.0.0';
 
 server.listen(PORT, HOST, () => {
