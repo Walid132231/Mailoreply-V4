@@ -139,12 +139,91 @@ export default function EnterpriseManagement() {
 
   const handleAddEnterprise = async () => {
     try {
-      // TODO: Add real Supabase integration
-      // const { data, error } = await supabase.from('companies').insert([newEnterprise]);
-      // if (error) throw error;
+      if (!newEnterprise.name || !newEnterprise.managerEmail || !newEnterprise.managerName) {
+        alert('Please fill in all required fields');
+        return;
+      }
 
-      console.log('Adding enterprise:', newEnterprise);
-      setIsAddingEnterprise(false);
+      if (!isServiceRoleConfigured || !supabaseServiceRole) {
+        alert('Service role not configured. Please contact administrator.');
+        return;
+      }
+
+      console.log('Creating enterprise with service role client...');
+      setIsAddingEnterprise(true);
+
+      // Create company first using service role client (bypasses RLS)
+      const { data: company, error: companyError } = await supabaseServiceRole
+        .from('companies')
+        .insert({
+          name: newEnterprise.name,
+          domain: newEnterprise.domain,
+          plan_type: 'enterprise',
+          max_users: newEnterprise.maxUsers,
+          current_users: 0,
+          monthly_payment: newEnterprise.monthlyPayment,
+          status: 'active',
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (companyError) {
+        console.error('Error creating company:', companyError);
+        alert(`Error creating company: ${companyError.message}`);
+        return;
+      }
+
+      console.log('Company created successfully:', company);
+
+      // Create manager user using service role client (bypasses RLS)
+      const { data: userData, error: userError } = await supabaseServiceRole
+        .from('users')
+        .insert({
+          name: newEnterprise.managerName,
+          email: newEnterprise.managerEmail,
+          role: 'enterprise_manager',
+          company_id: company.id,
+          daily_limit: -1,
+          monthly_limit: -1,
+          device_limit: -1,
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (userError) {
+        console.error('Error creating user:', userError);
+        alert(`Error creating user: ${userError.message}`);
+        return;
+      }
+
+      console.log('User created successfully:', userData);
+
+      // Send invitation to the manager using service role client
+      const { data: inviteResult, error: inviteError } = await supabaseServiceRole
+        .rpc('invite_enterprise_user', {
+          user_email: newEnterprise.managerEmail,
+          user_name: newEnterprise.managerName,
+          user_role: 'enterprise_manager',
+          manager_user_id: userData.id
+        });
+
+      if (inviteError) {
+        console.error('Error sending invitation:', inviteError);
+        alert(`Error sending invitation: ${inviteError.message}`);
+        return;
+      }
+
+      if (!inviteResult?.success) {
+        alert(`Failed to send invitation: ${inviteResult?.error || 'Unknown error'}`);
+        return;
+      }
+
+      console.log('Invitation sent successfully');
+      alert(`Enterprise "${newEnterprise.name}" created and invitation sent to ${newEnterprise.managerEmail}`);
+
+      // Reset form and close dialog
       setNewEnterprise({
         name: '',
         domain: '',
@@ -153,10 +232,14 @@ export default function EnterpriseManagement() {
         managerEmail: '',
         managerName: ''
       });
+
       // Refresh the list
       fetchEnterprises();
     } catch (error) {
       console.error('Error adding enterprise:', error);
+      alert(`Error adding enterprise: ${error}`);
+    } finally {
+      setIsAddingEnterprise(false);
     }
   };
 
