@@ -342,7 +342,7 @@ export default function NewDashboard() {
                   Start creating emails instantly
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-6">
                 <Link to="/dashboard/ai-generator">
                   <Button className="w-full bg-brand-600 hover:bg-brand-700">
                     <Plus className="mr-2 h-4 w-4" />

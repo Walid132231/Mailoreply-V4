@@ -347,9 +347,9 @@ export default function Settings() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="default-language" className="flex items-center space-x-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="flex flex-col">
+                      <Label htmlFor="default-language" className="flex items-center space-x-2 mb-3">
                         <Globe className="h-4 w-4" />
                         <span>Default Language</span>
                       </Label>
@@ -365,8 +365,8 @@ export default function Settings() {
                       </Select>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="default-tone">Default Tone</Label>
+                    <div className="flex flex-col">
+                      <Label htmlFor="default-tone" className="mb-3">Default Tone</Label>
                       <Select value={defaultTone} onValueChange={(value) => setDefaultTone(value as Tone)}>
                         <SelectTrigger>
                           <SelectValue />
