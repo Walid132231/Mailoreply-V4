@@ -348,6 +348,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     try {
+      console.log('🔐 Starting login process for:', email);
       setLoading(true);
       
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -356,15 +357,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
 
       if (error) {
+        console.error('❌ Login failed:', error.message);
         setLoading(false);
         return { success: false, error: error.message };
       }
 
-      // fetchUserProfile will be called by auth state change listener
+      console.log('✅ Login successful, auth state change will trigger profile fetch');
+      // Don't set loading to false here - let the auth state change handler manage it
       return { success: true };
     } catch (error: any) {
+      console.error('❌ Unexpected login error:', error);
       setLoading(false);
-      console.error('❌ Login error:', error);
       return { success: false, error: error.message || 'An unexpected error occurred' };
     }
   };
