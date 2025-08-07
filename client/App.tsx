@@ -117,7 +117,7 @@ function AppContent() {
         <Route path="/login" element={<NewLogin />} />
         <Route path="/signup" element={<NewSignup />} />
         {/* Setup is complete - redirect to login */}
-        <Route path="/setup" element={<Login />} />
+        <Route path="/setup" element={<NewLogin />} />
 
         {/* Catch-all route */}
         <Route path="*" element={<NotFound />} />
