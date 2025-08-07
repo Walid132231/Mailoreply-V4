@@ -249,15 +249,44 @@ export default function EnterpriseManagement() {
     }
 
     try {
-      // TODO: Add real Supabase integration
-      // const { error } = await supabase.from('companies').delete().eq('id', enterpriseId);
-      // if (error) throw error;
+      if (!isServiceRoleConfigured || !supabaseServiceRole) {
+        alert('Service role not configured. Please contact administrator.');
+        return;
+      }
 
       console.log('Deleting enterprise:', enterpriseId);
+
+      // First, delete all users associated with this company
+      const { error: usersError } = await supabaseServiceRole
+        .from('users')
+        .delete()
+        .eq('company_id', enterpriseId);
+
+      if (usersError) {
+        console.error('Error deleting users:', usersError);
+        alert(`Error deleting users: ${usersError.message}`);
+        return;
+      }
+
+      // Then delete the company
+      const { error: companyError } = await supabaseServiceRole
+        .from('companies')
+        .delete()
+        .eq('id', enterpriseId);
+
+      if (companyError) {
+        console.error('Error deleting company:', companyError);
+        alert(`Error deleting company: ${companyError.message}`);
+        return;
+      }
+
+      alert('Enterprise deleted successfully');
+      
       // Refresh the list
       fetchEnterprises();
     } catch (error) {
       console.error('Error deleting enterprise:', error);
+      alert(`Error deleting enterprise: ${error}`);
     }
   };
 
