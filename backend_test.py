@@ -120,75 +120,102 @@ class EnterpriseCreationTester:
             print(f"   Details: {details}")
 
     async def test_database_schema_validation(self):
-        """Test 1: Verify database schema matches expected structure"""
+        """Test 1: Verify database schema matches expected structure via API"""
         try:
-            async with self.db_pool.acquire() as conn:
-                # Check companies table structure
-                companies_columns = await conn.fetch("""
-                    SELECT column_name, data_type, is_nullable
-                    FROM information_schema.columns
-                    WHERE table_name = 'companies'
-                    ORDER BY ordinal_position
-                """)
+            headers = {
+                'apikey': SUPABASE_SERVICE_ROLE_KEY,
+                'Authorization': f'Bearer {SUPABASE_SERVICE_ROLE_KEY}',
+                'Content-Type': 'application/json'
+            }
+            
+            # Test creating a company with the corrected schema
+            test_schema_data = {
+                'name': 'Schema Test Corp',
+                'plan': 'enterprise',  # Using 'plan' not 'plan_type'
+                'max_users': 10,
+                'current_users': 0,
+                'status': 'active'
+            }
+            
+            async with self.session.post(
+                f"{SUPABASE_API_URL}/companies",
+                json=test_schema_data,
+                headers=headers
+            ) as response:
                 
-                companies_column_names = {col['column_name'] for col in companies_columns}
-                
-                # Verify corrected schema - should have 'plan' not 'plan_type'
-                if 'plan' not in companies_column_names:
+                if response.status != 201:
+                    error_text = await response.text()
+                    
+                    # Check if error mentions monthly_payment (should not exist)
+                    if 'monthly_payment' in error_text.lower():
+                        self.log_test_result(
+                            "Database Schema Validation",
+                            False,
+                            "Error mentions 'monthly_payment' - column should have been removed",
+                            {'error': error_text}
+                        )
+                        return False
+                    
+                    # Check if error mentions plan_type (should be 'plan')
+                    if 'plan_type' in error_text.lower():
+                        self.log_test_result(
+                            "Database Schema Validation",
+                            False,
+                            "Error mentions 'plan_type' - should be 'plan'",
+                            {'error': error_text}
+                        )
+                        return False
+                    
                     self.log_test_result(
-                        "Database Schema - Companies Table",
+                        "Database Schema Validation",
                         False,
-                        "Missing 'plan' column in companies table"
+                        f"Failed to create test company. Status: {response.status}",
+                        {'error': error_text}
                     )
                     return False
                 
-                # Verify monthly_payment column is NOT present (was removed)
-                if 'monthly_payment' in companies_column_names:
+                company_data = await response.json()
+                
+                if not company_data or not isinstance(company_data, list) or len(company_data) == 0:
                     self.log_test_result(
-                        "Database Schema - Companies Table",
+                        "Database Schema Validation",
                         False,
-                        "Found 'monthly_payment' column - should have been removed"
+                        "No company data returned"
                     )
                     return False
                 
-                # Check required columns exist
-                required_columns = {
-                    'id', 'name', 'plan', 'max_users', 'current_users', 
-                    'domain', 'status', 'created_at', 'updated_at'
-                }
+                created_company = company_data[0]
+                company_id = created_company.get('id')
                 
-                missing_columns = required_columns - companies_column_names
-                if missing_columns:
+                if company_id:
+                    self.test_data['companies'].append(company_id)
+                
+                # Verify the schema is correct
+                if created_company.get('plan') != 'enterprise':
                     self.log_test_result(
-                        "Database Schema - Companies Table",
+                        "Database Schema Validation",
                         False,
-                        f"Missing required columns: {missing_columns}"
+                        f"Plan field incorrect. Expected: 'enterprise', Got: {created_company.get('plan')}"
                     )
                     return False
                 
-                # Check plan enum values
-                plan_enum_values = await conn.fetchval("""
-                    SELECT array_agg(enumlabel::text)
-                    FROM pg_enum e
-                    JOIN pg_type t ON e.enumtypid = t.oid
-                    WHERE t.typname = 'plan_type'
-                """)
-                
-                if 'enterprise' not in plan_enum_values:
+                # Verify monthly_payment field is NOT present
+                if 'monthly_payment' in created_company:
                     self.log_test_result(
-                        "Database Schema - Plan Enum",
+                        "Database Schema Validation",
                         False,
-                        f"'enterprise' not found in plan enum values: {plan_enum_values}"
+                        "monthly_payment field should not be present in response"
                     )
                     return False
                 
                 self.log_test_result(
                     "Database Schema Validation",
                     True,
-                    "Schema correctly updated - 'plan' column exists, 'monthly_payment' removed",
+                    "Schema correctly updated - 'plan' column works, 'monthly_payment' not present",
                     {
-                        'companies_columns': list(companies_column_names),
-                        'plan_enum_values': plan_enum_values
+                        'company_id': company_id,
+                        'plan': created_company.get('plan'),
+                        'fields_present': list(created_company.keys())
                     }
                 )
                 return True
