@@ -3,6 +3,9 @@ import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { User, UserSettings, Company, UserRole } from '@/lib/supabase-types';
 
+// Export UserRole for ProtectedRoute
+export type { UserRole };
+
 // Enhanced Auth Context Interface
 interface AuthContextType {
   user: User | null;
