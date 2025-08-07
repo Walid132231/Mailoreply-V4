@@ -258,18 +258,18 @@ export default function NewDashboard() {
                           <span className="text-sm font-medium text-blue-900">Daily Usage</span>
                           <Calendar className="h-4 w-4 text-blue-600" />
                         </div>
-                        {usageStats.isUnlimited ? (
+                        {usageStats.isUnlimited || usageStats.daily.limit === -1 ? (
                           <p className="text-2xl font-bold text-blue-900">Unlimited</p>
                         ) : (
                           <>
                             <p className="text-2xl font-bold text-blue-900">
-                              {usageStats.daily.used}/{usageStats.daily.limit}
+                              {usageStats.daily.used || 0}/{usageStats.daily.limit || 0}
                             </p>
                             <div className="w-full bg-blue-200 rounded-full h-2 mt-2">
                               <div 
                                 className="bg-blue-600 h-2 rounded-full" 
                                 style={{ 
-                                  width: `${Math.min((usageStats.daily.used / usageStats.daily.limit) * 100, 100)}%` 
+                                  width: `${Math.min(((usageStats.daily.used || 0) / (usageStats.daily.limit || 1)) * 100, 100)}%` 
                                 }}
                               />
                             </div>
