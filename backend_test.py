@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Backend Test Suite for MailoReply AI Authentication System and API Health
-Tests authentication flow, API endpoints, and Settings page navigation functionality.
+Backend Test Suite for MailoReply AI Enterprise Creation Functionality
+Tests the fixed enterprise creation functionality after schema corrections.
 """
 
 import os
@@ -26,12 +26,8 @@ DB_NAME = "postgres"
 DB_USER = "postgres"
 DB_PASSWORD = "Walidjakarta1997!"
 
-# Test user credentials
-TEST_USER_EMAIL = "admin@mailoreply.com"
-TEST_USER_PASSWORD = "Admin123!"
-
-# API Base URL (from server configuration)
-API_BASE_URL = "http://localhost:8080"
+# Supabase API endpoints
+SUPABASE_API_URL = f"{SUPABASE_URL}/rest/v1"
 
 class EnterpriseInvitationTester:
     def __init__(self):
