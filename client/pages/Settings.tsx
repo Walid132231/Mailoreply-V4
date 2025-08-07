@@ -31,7 +31,7 @@ import { getUserDevices, removeDevice } from '@/lib/usage-tracking';
 import { LANGUAGES, TONES, Language, Tone, UserDevice } from '@/lib/supabase-types';
 import SubscriptionManager from '@/components/SubscriptionManager';
 
-export default function SettingsNew() {
+export default function Settings() {
   const { user, settings, updateUser, updateSettings } = useAuth();
   
   // Local state
