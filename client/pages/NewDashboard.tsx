@@ -317,34 +317,6 @@ export default function NewDashboard() {
                         )}
                       </div>
                     </div>
-
-                    {/* System Status for Superuser */}
-                    {user.role === 'superuser' && (
-                      <div className="mt-6 p-4 bg-red-50 rounded-lg border border-red-100">
-                        <h3 className="font-medium text-red-900 mb-3 flex items-center">
-                          <Shield className="h-4 w-4 mr-2" />
-                          System Status
-                        </h3>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                          <div className="flex items-center space-x-2">
-                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                            <span className="text-gray-700">AI Generation: Online</span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                            <span className="text-gray-700">Database: Connected</span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                            <span className="text-gray-700">Chrome Extension: Active</span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                            <span className="text-gray-700">RLS: Under Maintenance</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 ) : (
                   <div className="text-center text-gray-500 py-8">
@@ -370,7 +342,7 @@ export default function NewDashboard() {
                   Start creating emails instantly
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-4">
                 <Link to="/dashboard/ai-generator">
                   <Button className="w-full bg-brand-600 hover:bg-brand-700">
                     <Plus className="mr-2 h-4 w-4" />

@@ -69,23 +69,49 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [deviceFingerprint] = useState<string>(() => generateDeviceFingerprint());
+  const [isPageVisible, setIsPageVisible] = useState(!document.hidden);
 
-  // Fix page reload/tab switching issue with visibility API
+  // Enhanced page visibility handling to prevent reload issues
   useEffect(() => {
+    let refreshTimeout: NodeJS.Timeout;
+    
     const handleVisibilityChange = () => {
-      if (!document.hidden && session && !user) {
-        // Page became visible and we have session but no user - refresh user data
-        console.log('🔄 Page became visible, refreshing user data...');
+      const isVisible = !document.hidden;
+      setIsPageVisible(isVisible);
+      
+      if (isVisible && session && !user && !loading) {
+        // Clear any existing timeout
+        if (refreshTimeout) {
+          clearTimeout(refreshTimeout);
+        }
+        
+        // Debounced refresh - wait 500ms before refreshing to avoid rapid calls
+        refreshTimeout = setTimeout(() => {
+          console.log('🔄 Page became visible, refreshing user data...');
+          fetchUserProfile(session.user);
+        }, 500);
+      }
+    };
+
+    // Also handle focus events for better cross-browser compatibility
+    const handleFocus = () => {
+      if (session && !user && !loading) {
+        console.log('🔄 Window focused, checking user state...');
         fetchUserProfile(session.user);
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
     
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      if (refreshTimeout) {
+        clearTimeout(refreshTimeout);
+      }
     };
-  }, [session, user]);
+  }, [session, user, loading]);
 
   // Initialize authentication
   useEffect(() => {

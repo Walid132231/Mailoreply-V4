@@ -347,14 +347,14 @@ export default function Settings() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
                       <Label htmlFor="default-language" className="flex items-center space-x-2">
                         <Globe className="h-4 w-4" />
                         <span>Default Language</span>
                       </Label>
                       <Select value={defaultLanguage} onValueChange={(value) => setDefaultLanguage(value as Language)}>
-                        <SelectTrigger className="mt-2">
+                        <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -365,10 +365,10 @@ export default function Settings() {
                       </Select>
                     </div>
 
-                    <div>
+                    <div className="space-y-2">
                       <Label htmlFor="default-tone">Default Tone</Label>
                       <Select value={defaultTone} onValueChange={(value) => setDefaultTone(value as Tone)}>
-                        <SelectTrigger className="mt-2">
+                        <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
