@@ -124,7 +124,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 {user?.email}
               </p>
               <div className="mt-1">
-                {getRoleBadge(userRole)}
+                {getRoleBadge(user?.role || 'free')}
               </div>
             </div>
           </div>
