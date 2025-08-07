@@ -57,12 +57,9 @@ class EnterpriseCreationTester:
         """Clean up connections and test data"""
         try:
             if self.session:
-                await self.session.close()
-            
-            if self.db_pool:
-                # Clean up test data
+                # Clean up test data via API
                 await self.cleanup_test_data()
-                await self.db_pool.close()
+                await self.session.close()
                 
             print("✅ Cleanup completed successfully")
             
