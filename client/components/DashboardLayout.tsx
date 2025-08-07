@@ -43,11 +43,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   ];
 
   // Add role-specific navigation
-  if (userRole === 'enterprise_manager') {
+  if (user?.role === 'enterprise_manager') {
     navigation.push({ name: 'Team Management', href: '/dashboard/team', icon: Users });
   }
 
-  if (userRole === 'superuser') {
+  if (user?.role === 'superuser') {
     navigation.push({ name: 'Enterprise', href: '/dashboard/enterprise', icon: Crown });
   }
 
