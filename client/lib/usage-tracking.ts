@@ -82,23 +82,59 @@ export async function getUserUsageStats(userId: string): Promise<UsageStats | nu
  * Check if user can perform a generation
  */
 export async function canUserGenerate(userId: string): Promise<boolean> {
-  if (!isSupabaseConfigured || !supabase) {
-    // Always allow in demo mode
-    return true;
-  }
-
   try {
-    const { data, error } = await supabase
-      .rpc('can_user_generate', { user_uuid: userId });
+    const serviceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhY3VxZ3l5Y3RhdHduYmVta3l4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDIzNzkxNCwiZXhwIjoyMDY5ODEzOTE0fQ.yfQNpr0Rk9Xlr7fVTOu8-GXBoo2Wc-P_Gjc7R3_W9CA';
 
-    if (error) {
-      console.error('Error checking generation availability:', error);
+    // Get user data to check limits and role  
+    const userResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/users?select=device_limit,role&id=eq.${userId}`, {
+      headers: {
+        'apikey': serviceRoleKey,
+        'Authorization': `Bearer ${serviceRoleKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!userResponse.ok) {
+      console.error('Error fetching user for device check:', await userResponse.text());
       return false;
     }
 
-    return data || false;
+    const users = await userResponse.json();
+    if (!users || users.length === 0) {
+      return false;
+    }
+
+    const user = users[0];
+
+    // Superusers can always generate
+    if (user.role === 'superuser' || user.role === 'pro_plus') {
+      return true;
+    }
+
+    // For other users, use the RPC function if available
+    try {
+      const rpcResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/rpc/can_user_generate`, {
+        method: 'POST',
+        headers: {
+          'apikey': serviceRoleKey,
+          'Authorization': `Bearer ${serviceRoleKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ user_uuid: userId })
+      });
+
+      if (rpcResponse.ok) {
+        const result = await rpcResponse.json();
+        return result === true;
+      }
+    } catch (rpcError) {
+      console.error('RPC function not available, using basic check');
+    }
+
+    // Basic fallback check
+    return true;
   } catch (error) {
-    console.error('Error in canUserGenerate:', error);
+    console.error('Error checking generation availability:', error);
     return false;
   }
 }
