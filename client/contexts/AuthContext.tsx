@@ -216,34 +216,43 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const fetchCompanyProfile = async (companyId: string) => {
     try {
-      const { data: companyData, error } = await supabase
-        .from('companies')
-        .select('*')
-        .eq('id', companyId)
-        .single();
-
-      if (error) throw error;
-
-      const companyProfile: Company = {
-        id: companyData.id,
-        name: companyData.name,
-        domain: companyData.domain,
-        subscription_plan: companyData.subscription_plan,
-        max_users: companyData.max_users,
-        current_users: companyData.current_users,
-        ai_generations_limit: companyData.ai_generations_limit,
-        ai_generations_used: companyData.ai_generations_used,
-        monthly_payment: companyData.monthly_payment,
-        status: companyData.status,
-        contract_start_date: companyData.contract_start_date,
-        contract_end_date: companyData.contract_end_date,
-      };
-
-      setCompany(companyProfile);
+      const serviceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhY3VxZ3l5Y3RhdHduYmVta3l4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDIzNzkxNCwiZXhwIjoyMDY5ODEzOTE0fQ.yfQNpr0Rk9Xlr7fVTOu8-GXBoo2Wc-P_Gjc7R3_W9CA';
       
-      // Update user with company name
-      if (user) {
-        setUser({ ...user, company_name: companyProfile.name });
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/companies?select=*&id=eq.${companyId}`, {
+        headers: {
+          'apikey': serviceRoleKey,
+          'Authorization': `Bearer ${serviceRoleKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const companies = await response.json();
+        if (companies && companies.length > 0) {
+          const companyData = companies[0];
+          
+          const companyProfile: Company = {
+            id: companyData.id,
+            name: companyData.name,
+            domain: companyData.domain,
+            subscription_plan: companyData.subscription_plan,
+            max_users: companyData.max_users,
+            current_users: companyData.current_users,
+            ai_generations_limit: companyData.ai_generations_limit,
+            ai_generations_used: companyData.ai_generations_used,
+            monthly_payment: companyData.monthly_payment,
+            status: companyData.status,
+            contract_start_date: companyData.contract_start_date,
+            contract_end_date: companyData.contract_end_date,
+          };
+
+          setCompany(companyProfile);
+          
+          // Update user with company name
+          if (user) {
+            setUser({ ...user, company_name: companyProfile.name });
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching company profile:', error);
