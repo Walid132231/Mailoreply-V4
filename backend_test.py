@@ -603,7 +603,9 @@ class EnterpriseCreationTester:
                 self.test_data['companies'].append(company_id)
             
             # Step 2: Create manager user
+            user_id = str(uuid.uuid4())
             user_payload = {
+                'id': user_id,  # Users table requires explicit ID
                 'name': enterprise_data['managerName'],
                 'email': enterprise_data['managerEmail'],
                 'role': 'enterprise_manager',
