@@ -41,27 +41,16 @@ class EnterpriseCreationTester:
         }
         
     async def setup(self):
-        """Initialize database connection and HTTP session"""
+        """Initialize HTTP session for API testing"""
         try:
-            # Create database connection pool
-            self.db_pool = await asyncpg.create_pool(
-                host=DB_HOST,
-                port=DB_PORT,
-                database=DB_NAME,
-                user=DB_USER,
-                password=DB_PASSWORD,
-                min_size=1,
-                max_size=5
-            )
-            
             # Create HTTP session
             self.session = aiohttp.ClientSession()
             
-            print("✅ Database and HTTP session initialized successfully")
+            print("✅ HTTP session initialized successfully")
             return True
             
         except Exception as e:
-            print(f"❌ Failed to initialize connections: {e}")
+            print(f"❌ Failed to initialize HTTP session: {e}")
             return False
     
     async def cleanup(self):
