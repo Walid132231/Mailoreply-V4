@@ -26,7 +26,7 @@ import {
   Crown
 } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/NewAuthContext';
 import { getUserDevices, removeDevice } from '@/lib/usage-tracking';
 import { LANGUAGES, TONES, Language, Tone, UserDevice } from '@/lib/supabase-types';
 import SubscriptionManager from '@/components/SubscriptionManager';
