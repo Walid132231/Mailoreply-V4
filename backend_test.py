@@ -634,8 +634,8 @@ class EnterpriseCreationTester:
                 
                 user_result = await response.json()
                 user = user_result[0]
-                user_id = user['id']
-                self.test_data['users'].append(user_id)
+                returned_user_id = user['id']
+                self.test_data['users'].append(returned_user_id)
             
             # Step 3: Verify the complete setup
             # Fetch the created company with users
